@@ -5,7 +5,7 @@ def initialize_database():
     """
     Initializes the PostgreSQL database schema for the Fleet Management System.
     Creates two related tables:
-    1. 'drives': Stores metadata for each driving session (Start, End, Total Alerts).
+    1. 'drives': Stores metadata for each driving session (including video links).
     2. 'drive_logs': Stores high-frequency telemetry data linked to a specific drive.
     """
     # Retrieve database URL from environment variables (Heroku)
@@ -18,11 +18,12 @@ def initialize_database():
     cur = conn.cursor()
 
     # Drop existing tables to ensure a clean schema update
-    print("[DB] Dropping old tables...")
-    cur.execute("DROP TABLE IF EXISTS drive_logs;")
-    cur.execute("DROP TABLE IF EXISTS drives;")
+    print("[DB] Dropping old tables (if exist)...")
+    cur.execute("DROP TABLE IF EXISTS drive_logs CASCADE;")
+    cur.execute("DROP TABLE IF EXISTS drives CASCADE;")
 
     # Table 1: Drive Sessions
+    # Added 'video_url' to store the Cloudinary link
     print("[DB] Creating 'drives' table...")
     cur.execute("""
         CREATE TABLE drives (
@@ -30,12 +31,13 @@ def initialize_database():
             device_id VARCHAR(50),
             start_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             end_time TIMESTAMP,
-            total_alerts INTEGER DEFAULT 0
+            total_alerts INTEGER DEFAULT 0,
+            video_url TEXT
         );
     """)
 
     # Table 2: Telemetry Logs
-    # Uses Foreign Key (drive_id) to link data to the parent session
+    # This table stores the granular data for the graphs
     print("[DB] Creating 'drive_logs' table...")
     cur.execute("""
         CREATE TABLE drive_logs (
@@ -55,7 +57,7 @@ def initialize_database():
     conn.commit()
     cur.close()
     conn.close()
-    print("[DB] Initialization complete. System ready for Fleet Management.")
+    print("[DB] Initialization complete. Database is ready.")
 
 if __name__ == "__main__":
     initialize_database()
