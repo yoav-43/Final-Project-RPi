@@ -3,152 +3,105 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Safety Manager Dashboard</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <title>Fleet Manager Overview</title>
     <style>
-        /* Dark Theme Styling */
         body { 
             background-color: #1e1e2f; 
             color: #e0e0e0; 
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            margin: 0; 
             padding: 20px; 
+            margin: 0;
         }
+        h1 { text-align: center; color: #ffffff; margin-bottom: 40px; letter-spacing: 1px;}
         
-        h1 { 
-            text-align: center; 
-            margin-bottom: 30px; 
-            color: #ffffff; 
-            letter-spacing: 1.5px; 
-            text-transform: uppercase;
-        }
-        
-        /* Stats Summary Bar */
-        .stats-container {
-            display: flex;
-            justify-content: space-around;
-            margin-bottom: 30px;
-        }
-        .stat-box { 
-            text-align: center; 
+        /* Stats Cards at the top */
+        .stats-row { display: flex; justify-content: center; gap: 30px; margin-bottom: 50px; }
+        .stat-card { 
             background: #27293d; 
-            padding: 20px; 
-            border-radius: 8px; 
-            width: 250px; 
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            padding: 20px 40px; 
+            border-radius: 12px; 
+            text-align: center; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            min-width: 200px;
         }
-        .stat-label { font-size: 0.9rem; color: #9a9a9a; margin-bottom: 5px; }
-        .stat-number { font-size: 2.5rem; font-weight: bold; }
-        .red-text { color: #ff6384; }
+        .stat-label { color: #9a9a9a; font-size: 0.9rem; text-transform: uppercase; margin-bottom: 10px; }
+        .stat-value { font-size: 3rem; font-weight: bold; }
         .blue-text { color: #36a2eb; }
-        .green-text { color: #4bc0c0; }
+        .pink-text { color: #d65b95; }
 
-        /* Dashboard Grid Layout (2x2) */
-        .dashboard-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            max-width: 1600px;
-            margin: 0 auto;
-        }
-
-        .card {
-            background: #27293d;
-            border-radius: 10px;
-            padding: 20px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-        }
-
-        .card h3 { 
-            margin-top: 0; 
-            font-size: 1.1rem; 
-            color: #d1d1d1; 
-            border-bottom: 1px solid #3d3d5c;
-            padding-bottom: 10px;
-        }
+        /* Drives Table */
+        .table-wrapper { max-width: 1200px; margin: 0 auto; background: #27293d; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        table { width: 100%; border-collapse: collapse; }
+        th { background: #343650; color: #ffffff; padding: 15px; text-align: left; font-weight: 600; text-transform: uppercase; font-size: 0.85rem;}
+        td { padding: 15px; border-bottom: 1px solid #3d3d5c; color: #cfcfcf; }
         
-        canvas { max-height: 300px; width: 100%; }
-
-        /* Alert Log Table */
-        .table-container {
-            margin-top: 30px;
-            max-width: 1600px;
-            margin-left: auto;
-            margin-right: auto;
-            background: #27293d;
-            border-radius: 10px;
-            padding: 20px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-        }
+        /* Interactive Rows */
+        tbody tr:hover { background-color: #2f3147; cursor: pointer; transition: 0.2s; }
         
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { text-align: left; padding: 12px; border-bottom: 1px solid #3d3d5c; }
-        th { color: #d65b95; font-weight: bold; }
-        tr:hover { background-color: #2f3147; }
-        
-        .alert-fatigue { color: #ff6384; font-weight: bold; }
-        .alert-distraction { color: #36a2eb; font-weight: bold; }
+        /* Badge Styles */
+        .status-badge { padding: 5px 10px; border-radius: 15px; font-size: 0.8rem; font-weight: bold; }
+        .status-active { background: rgba(75, 192, 192, 0.2); color: #4bc0c0; }
+        .status-ended { background: rgba(201, 203, 207, 0.2); color: #c9cbcf; }
 
+        .alert-high { color: #ff6384; font-weight: bold; }
+        .alert-low { color: #4bc0c0; }
     </style>
 </head>
 <body>
 
-    <h1>Driver Fatigue Monitoring Center</h1>
+    <h1>FLEET MONITORING CENTER</h1>
 
-    <div class="stats-container">
-        <div class="stat-box">
-            <div class="stat-label">Fatigue Incidents</div>
-            <div id="fatigueCount" class="stat-number red-text">0</div>
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="stat-label">Total Drive Sessions</div>
+            <div class="stat-value blue-text">{{ total_drives }}</div>
         </div>
-        <div class="stat-box">
-            <div class="stat-label">Distraction Events</div>
-            <div id="distractionCount" class="stat-number blue-text">0</div>
-        </div>
-        <div class="stat-box">
-            <div class="stat-label">System Status</div>
-            <div id="currentStatus" class="stat-number green-text">Online</div>
+        <div class="stat-card">
+            <div class="stat-label">Total System Alerts</div>
+            <div class="stat-value pink-text">{{ total_alerts }}</div>
         </div>
     </div>
 
-    <div class="dashboard-grid">
-        
-        <div class="card">
-            <h3>Fatigue Level (PERCLOS %)</h3>
-            <canvas id="perclosChart"></canvas>
-        </div>
-
-        <div class="card">
-            <h3>Facial Metrics (EAR & MAR)</h3>
-            <canvas id="faceChart"></canvas>
-        </div>
-
-        <div class="card">
-            <h3>Head Pose (Yaw / Pitch / Roll)</h3>
-            <canvas id="headChart"></canvas>
-        </div>
-
-        <div class="card">
-            <h3>Alerts Timeline</h3>
-            <canvas id="alertsChart"></canvas>
-        </div>
-    </div>
-
-    <div class="table-container">
-        <h3>Session Alert Log</h3>
-        <table id="alertsTable">
+    <div class="table-wrapper">
+        <table>
             <thead>
                 <tr>
-                    <th>Timestamp</th>
-                    <th>Alert Type</th>
-                    <th>Measured Value</th>
+                    <th>Drive ID</th>
+                    <th>Device</th>
+                    <th>Start Time</th>
+                    <th>End Time</th>
+                    <th>Alerts</th>
                     <th>Status</th>
                 </tr>
             </thead>
             <tbody>
-                </tbody>
+                {% for drive in drives %}
+                <tr onclick="window.location.href='/drive/{{ drive[0] }}'">
+                    <td>#{{ drive[0] }}</td>
+                    <td>{{ drive[1] }}</td>
+                    <td>{{ drive[2].strftime('%Y-%m-%d %H:%M') }}</td>
+                    <td>
+                        {% if drive[3] %}
+                            {{ drive[3].strftime('%H:%M') }}
+                        {% else %}
+                            --
+                        {% endif %}
+                    </td>
+                    <td class="{{ 'alert-high' if drive[4] > 0 else 'alert-low' }}">
+                        {{ drive[4] }} Events
+                    </td>
+                    <td>
+                        {% if drive[3] %}
+                            <span class="status-badge status-ended">COMPLETED</span>
+                        {% else %}
+                            <span class="status-badge status-active">ACTIVE</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
         </table>
     </div>
 
-    <script src="/static/dashboard.js"></script>
 </body>
 </html>
