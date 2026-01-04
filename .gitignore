@@ -52,3 +52,4 @@ slprj/
 
 # --- Google Drive Temp Files ---
 ~$*
+*.dat
