@@ -14,7 +14,6 @@
         }
         h1 { text-align: center; color: #ffffff; margin-bottom: 40px; letter-spacing: 1px;}
         
-        /* Stats Cards at the top */
         .stats-row { display: flex; justify-content: center; gap: 30px; margin-bottom: 50px; }
         .stat-card { 
             background: #27293d; 
@@ -25,26 +24,45 @@
             min-width: 200px;
         }
         .stat-label { color: #9a9a9a; font-size: 0.9rem; text-transform: uppercase; margin-bottom: 10px; }
-        .stat-value { font-size: 3rem; font-weight: bold; }
-        .blue-text { color: #36a2eb; }
-        .pink-text { color: #d65b95; }
+        .stat-value { font-size: 2.5rem; font-weight: bold; color: #00f2c3; }
 
-        /* Drives Table */
-        .table-wrapper { max-width: 1200px; margin: 0 auto; background: #27293d; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
-        table { width: 100%; border-collapse: collapse; }
-        th { background: #343650; color: #ffffff; padding: 15px; text-align: left; font-weight: 600; text-transform: uppercase; font-size: 0.85rem;}
-        td { padding: 15px; border-bottom: 1px solid #3d3d5c; color: #cfcfcf; }
-        
-        /* Interactive Rows */
-        tbody tr:hover { background-color: #2f3147; cursor: pointer; transition: 0.2s; }
-        
-        /* Badge Styles */
-        .status-badge { padding: 5px 10px; border-radius: 15px; font-size: 0.8rem; font-weight: bold; }
-        .status-active { background: rgba(75, 192, 192, 0.2); color: #4bc0c0; }
-        .status-ended { background: rgba(201, 203, 207, 0.2); color: #c9cbcf; }
+        .table-container {
+            background: #27293d;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            overflow-x: auto;
+        }
+        table { width: 100%; border-collapse: collapse; text-align: left; }
+        th { padding: 15px; color: #9a9a9a; text-transform: uppercase; font-size: 0.85rem; border-bottom: 1px solid #3d3d5c; }
+        td { padding: 15px; border-bottom: 1px solid #3d3d5c; font-size: 0.95rem; cursor: pointer; }
+        tr:hover { background: rgba(255,255,255,0.05); }
 
         .alert-high { color: #ff6384; font-weight: bold; }
-        .alert-low { color: #4bc0c0; }
+        .alert-low { color: #00f2c3; }
+        
+        .status-badge {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+        .status-active { background: rgba(0, 242, 195, 0.2); color: #00f2c3; }
+        .status-ended { background: rgba(255, 255, 255, 0.1); color: #9a9a9a; }
+
+        /* Video Button Style */
+        .btn-video {
+            display: inline-block;
+            padding: 6px 12px;
+            background-color: #6366f1;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            transition: 0.3s;
+        }
+        .btn-video:hover { background-color: #4f46e5; }
+        .no-video { color: #525f7f; font-style: italic; font-size: 0.8rem; }
     </style>
 </head>
 <body>
@@ -53,16 +71,16 @@
 
     <div class="stats-row">
         <div class="stat-card">
-            <div class="stat-label">Total Drive Sessions</div>
-            <div class="stat-value blue-text">{{ total_drives }}</div>
+            <div class="stat-label">Total Drives</div>
+            <div class="stat-value">{{ total_drives }}</div>
         </div>
         <div class="stat-card">
-            <div class="stat-label">Total System Alerts</div>
-            <div class="stat-value pink-text">{{ total_alerts }}</div>
+            <div class="stat-label">Critical Alerts</div>
+            <div class="stat-value" style="color: #ff6384;">{{ total_alerts }}</div>
         </div>
     </div>
 
-    <div class="table-wrapper">
+    <div class="table-container">
         <table>
             <thead>
                 <tr>
@@ -71,24 +89,26 @@
                     <th>Start Time</th>
                     <th>End Time</th>
                     <th>Alerts</th>
+                    <th>Recording</th>
                     <th>Status</th>
                 </tr>
             </thead>
             <tbody>
                 {% for drive in drives %}
-                <tr onclick="window.location.href='/drive/{{ drive[0] }}'">
-                    <td>#{{ drive[0] }}</td>
+                <tr>
+                    <td onclick="window.location.href='/drive/{{ drive[0] }}'">#{{ drive[0] }}</td>
                     <td>{{ drive[1] }}</td>
                     <td>{{ drive[2].strftime('%Y-%m-%d %H:%M') }}</td>
-                    <td>
-                        {% if drive[3] %}
-                            {{ drive[3].strftime('%H:%M') }}
-                        {% else %}
-                            --
-                        {% endif %}
-                    </td>
+                    <td>{{ drive[3].strftime('%H:%M') if drive[3] else '--:--' }}</td>
                     <td class="{{ 'alert-high' if drive[4] > 0 else 'alert-low' }}">
                         {{ drive[4] }} Events
+                    </td>
+                    <td>
+                        {% if drive[5] %}
+                            <a href="{{ drive[5] }}" target="_blank" class="btn-video">🎥 Watch</a>
+                        {% else %}
+                            <span class="no-video">N/A</span>
+                        {% endif %}
                     </td>
                     <td>
                         {% if drive[3] %}
