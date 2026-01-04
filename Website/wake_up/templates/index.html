@@ -2,126 +2,48 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fleet Manager Overview</title>
+    <title>Fleet Manager | WakeUp</title>
     <style>
-        body { 
-            background-color: #1e1e2f; 
-            color: #e0e0e0; 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            padding: 20px; 
-            margin: 0;
-        }
-        h1 { text-align: center; color: #ffffff; margin-bottom: 40px; letter-spacing: 1px;}
-        
-        .stats-row { display: flex; justify-content: center; gap: 30px; margin-bottom: 50px; }
-        .stat-card { 
-            background: #27293d; 
-            padding: 20px 40px; 
-            border-radius: 12px; 
-            text-align: center; 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-            min-width: 200px;
-        }
-        .stat-label { color: #9a9a9a; font-size: 0.9rem; text-transform: uppercase; margin-bottom: 10px; }
-        .stat-value { font-size: 2.5rem; font-weight: bold; color: #00f2c3; }
-
-        .table-container {
-            background: #27293d;
-            border-radius: 12px;
-            padding: 20px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-            overflow-x: auto;
-        }
-        table { width: 100%; border-collapse: collapse; text-align: left; }
-        th { padding: 15px; color: #9a9a9a; text-transform: uppercase; font-size: 0.85rem; border-bottom: 1px solid #3d3d5c; }
-        td { padding: 15px; border-bottom: 1px solid #3d3d5c; font-size: 0.95rem; cursor: pointer; }
-        tr:hover { background: rgba(255,255,255,0.05); }
-
-        .alert-high { color: #ff6384; font-weight: bold; }
-        .alert-low { color: #00f2c3; }
-        
-        .status-badge {
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 0.75rem;
-            font-weight: bold;
-        }
-        .status-active { background: rgba(0, 242, 195, 0.2); color: #00f2c3; }
-        .status-ended { background: rgba(255, 255, 255, 0.1); color: #9a9a9a; }
-
-        /* Video Button Style */
-        .btn-video {
-            display: inline-block;
-            padding: 6px 12px;
-            background-color: #6366f1;
-            color: white;
-            text-decoration: none;
-            border-radius: 6px;
-            font-size: 0.8rem;
-            transition: 0.3s;
-        }
-        .btn-video:hover { background-color: #4f46e5; }
-        .no-video { color: #525f7f; font-style: italic; font-size: 0.8rem; }
+        body { background: #1a1a2e; color: #fff; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 30px; }
+        .header { text-align: center; margin-bottom: 50px; }
+        .stats-container { display: flex; justify-content: center; gap: 40px; margin-bottom: 40px; }
+        .card { background: #16213e; padding: 25px; border-radius: 15px; border: 1px solid #0f3460; text-align: center; min-width: 200px; }
+        .val { font-size: 2.5em; font-weight: bold; color: #4ecca3; }
+        table { width: 100%; border-collapse: collapse; background: #16213e; border-radius: 10px; overflow: hidden; }
+        th, td { padding: 18px; text-align: left; border-bottom: 1px solid #0f3460; }
+        tr:hover { background: #1f4068; cursor: pointer; }
+        .btn-video { background: #e94560; color: white; padding: 8px 15px; border-radius: 5px; text-decoration: none; font-weight: bold; }
     </style>
 </head>
 <body>
-
-    <h1>FLEET MONITORING CENTER</h1>
-
-    <div class="stats-row">
-        <div class="stat-card">
-            <div class="stat-label">Total Drives</div>
-            <div class="stat-value">{{ total_drives }}</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-label">Critical Alerts</div>
-            <div class="stat-value" style="color: #ff6384;">{{ total_alerts }}</div>
-        </div>
+    <div class="header"><h1>FLEET OVERVIEW DASHBOARD</h1></div>
+    
+    <div class="stats-container">
+        <div class="card"><div class="label">TOTAL DRIVES</div><div class="val">{{ total_drives }}</div></div>
+        <div class="card"><div class="label">ACTIVE ALERTS</div><div class="val" style="color: #e94560;">{{ total_alerts }}</div></div>
     </div>
 
-    <div class="table-container">
-        <table>
-            <thead>
-                <tr>
-                    <th>Drive ID</th>
-                    <th>Device</th>
-                    <th>Start Time</th>
-                    <th>End Time</th>
-                    <th>Alerts</th>
-                    <th>Recording</th>
-                    <th>Status</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for drive in drives %}
-                <tr>
-                    <td onclick="window.location.href='/drive/{{ drive[0] }}'">#{{ drive[0] }}</td>
-                    <td>{{ drive[1] }}</td>
-                    <td>{{ drive[2].strftime('%Y-%m-%d %H:%M') }}</td>
-                    <td>{{ drive[3].strftime('%H:%M') if drive[3] else '--:--' }}</td>
-                    <td class="{{ 'alert-high' if drive[4] > 0 else 'alert-low' }}">
-                        {{ drive[4] }} Events
-                    </td>
-                    <td>
-                        {% if drive[5] %}
-                            <a href="{{ drive[5] }}" target="_blank" class="btn-video">🎥 Watch</a>
-                        {% else %}
-                            <span class="no-video">N/A</span>
-                        {% endif %}
-                    </td>
-                    <td>
-                        {% if drive[3] %}
-                            <span class="status-badge status-ended">COMPLETED</span>
-                        {% else %}
-                            <span class="status-badge status-active">ACTIVE</span>
-                        {% endif %}
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-
+    <table>
+        <thead>
+            <tr><th>ID</th><th>DEVICE</th><th>START TIME</th><th>ALERTS</th><th>RECORDING</th></tr>
+        </thead>
+        <tbody>
+            {% for drive in drives %}
+            <tr onclick="window.location.href='/drive/{{ drive[0] }}'">
+                <td>#{{ drive[0] }}</td>
+                <td>{{ drive[1] }}</td>
+                <td>{{ drive[2].strftime('%Y-%m-%d %H:%M') }}</td>
+                <td>{{ drive[4] }} Events</td>
+                <td>
+                    {% if drive[5] %}
+                    <a href="{{ drive[5] }}" target="_blank" class="btn-video" onclick="event.stopPropagation();">🎥 WATCH</a>
+                    {% else %}
+                    <span style="opacity: 0.5;">Processing...</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 </body>
 </html>

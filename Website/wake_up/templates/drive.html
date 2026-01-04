@@ -5,67 +5,35 @@
     <title>Drive Analytics #{{ drive.id }}</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body { background-color: #1e1e2f; color: #e0e0e0; font-family: 'Segoe UI', sans-serif; padding: 20px; }
-        .card { background: #27293d; padding: 20px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
-        .meta-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; text-align: center; }
-        .meta-label { color: #9a9a9a; font-size: 0.8rem; text-transform: uppercase; }
-        .video-container { text-align: center; }
-        video { width: 100%; max-width: 720px; border-radius: 8px; border: 1px solid #3d3d5c; }
-        .dashboard-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        canvas { max-height: 250px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th { text-align: left; color: #9a9a9a; padding: 10px; border-bottom: 2px solid #3d3d5c; font-size: 0.8rem; }
-        td { padding: 10px; border-bottom: 1px solid #3d3d5c; font-size: 0.8rem; }
+        body { background: #1a1a2e; color: #fff; font-family: sans-serif; padding: 20px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .chart-card { background: #16213e; padding: 15px; border-radius: 10px; }
+        .video-box { grid-column: span 2; background: #000; border-radius: 10px; text-align: center; padding: 10px; }
+        video { width: 80%; max-height: 400px; border-radius: 5px; }
+        .back-btn { display: inline-block; margin-bottom: 20px; color: #4ecca3; text-decoration: none; font-weight: bold; }
     </style>
 </head>
 <body>
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <a href="/" style="color: #36a2eb; text-decoration: none; font-weight: bold;">← Back to Fleet</a>
-        <h2>Session Report: #{{ drive.id }}</h2>
+    <a href="/" class="back-btn">← BACK TO FLEET</a>
+    <h2>Analytics for Drive Session #{{ drive.id }}</h2>
+
+    <div class="grid">
+        {% if drive.video %}
+        <div class="video-box">
+            <h3>Session Recording (Cloudinary)</h3>
+            <video controls><source src="{{ drive.video }}" type="video/mp4"></video>
+        </div>
+        {% endif %}
+
+        <div class="chart-card"><h3>PERCLOS (Fatigue Score)</h3><canvas id="perclosChart"></canvas></div>
+        <div class="chart-card"><h3>EAR (Eye Aspect Ratio)</h3><canvas id="earChart"></canvas></div>
+        <div class="chart-card"><h3>Head Yaw (Side Movement)</h3><canvas id="yawChart"></canvas></div>
+        <div class="chart-card"><h3>Head Pitch (Up/Down)</h3><canvas id="pitchChart"></canvas></div>
     </div>
 
-    <div class="card meta-grid">
-        <div><div class="meta-label">Device</div><div>{{ drive.device }}</div></div>
-        <div><div class="meta-label">Start</div><div>{{ drive.start }}</div></div>
-        <div><div class="meta-label">End</div><div>{{ drive.end }}</div></div>
-        <div><div class="meta-label">Alerts</div><div style="color:#ff6384; font-weight:bold;">{{ drive.alerts }}</div></div>
-    </div>
-
-    {% if drive.video_url %}
-    <div class="card video-container">
-        <h3 style="margin-top: 0; color: #00f2c3;">Drive Video Recording</h3>
-        <video controls>
-            <source src="{{ drive.video_url }}" type="video/mp4">
-            Your browser does not support the video tag.
-        </video>
-    </div>
-    {% endif %}
-
-    <div class="dashboard-grid">
-        <div class="card"><h3>Drowsiness (PERCLOS)</h3><canvas id="perclosChart"></canvas></div>
-        <div class="card"><h3>Face Metrics (EAR/MAR)</h3><canvas id="faceChart"></canvas></div>
-        <div class="card"><h3>Head Pose (Angles)</h3><canvas id="headChart"></canvas></div>
-        <div class="card"><h3>Alert Timeline</h3><canvas id="alertsChart"></canvas></div>
-    </div>
-
-    <div class="card">
-        <h3>Detailed Telemetry Log</h3>
-        <table>
-            <thead>
-                <tr>
-                    <th>Time</th>
-                    <th>PERCLOS</th>
-                    <th>EAR</th>
-                    <th>MAR</th>
-                    <th>Yaw</th>
-                    <th>Pitch</th>
-                </tr>
-            </thead>
-            <tbody id="logsTableBody"></tbody>
-        </table>
-    </div>
-
-    <script>const DRIVE_ID = {{ drive.id }};</script>
+    <script>
+        const DRIVE_ID = {{ drive.id }};
+    </script>
     <script src="{{ url_for('static', filename='dashboard.js') }}"></script>
 </body>
 </html>
