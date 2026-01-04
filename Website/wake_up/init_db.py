@@ -1,14 +1,21 @@
+"""
+DATABASE INITIALIZATION SCRIPT
+Resets the Postgres schema for a clean deployment.
+"""
 import os
 import psycopg2
 
 def init():
-    conn = psycopg2.connect(os.environ.get('DATABASE_URL'), sslmode='require')
+    DATABASE_URL = os.environ.get('DATABASE_URL')
+    conn = psycopg2.connect(DATABASE_URL, sslmode='require')
     cur = conn.cursor()
     
-    print("Refreshing Database Schema...")
+    print("[DB] Dropping old tables...")
     cur.execute("DROP TABLE IF EXISTS drive_logs CASCADE;")
     cur.execute("DROP TABLE IF EXISTS drives CASCADE;")
 
+    # Table 1: High-level Session Data
+    print("[DB] Creating 'drives' table...")
     cur.execute("""
         CREATE TABLE drives (
             id SERIAL PRIMARY KEY,
@@ -20,6 +27,8 @@ def init():
         );
     """)
 
+    # Table 2: Detailed Telemetry for Analytics
+    print("[DB] Creating 'drive_logs' table...")
     cur.execute("""
         CREATE TABLE drive_logs (
             id SERIAL PRIMARY KEY,
@@ -35,7 +44,7 @@ def init():
 
     conn.commit()
     cur.close(); conn.close()
-    print("Database Ready!")
+    print("[SUCCESS] Database Initialized Successfully!")
 
 if __name__ == "__main__":
     init()
