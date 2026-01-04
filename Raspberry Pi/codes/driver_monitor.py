@@ -31,9 +31,9 @@ PREDICTOR_PATH = "shape_predictor_68_face_landmarks.dat"
 VIDEO_TEMP_FILE = "drive_video.mp4" 
 
 cloudinary.config( 
-  cloud_name = "YOUR_CLOUD_NAME", 
-  api_key = "YOUR_API_KEY", 
-  api_secret = "YOUR_API_SECRET" 
+  cloud_name = "dei1fd8k6", 
+  api_key = "545933773654545", 
+  api_secret = "434wCTl3T4jlwQKpjiX8Rp2Bc6s" 
 )
 
 EAR_THRESHOLD = 0.25
