@@ -1,83 +1,114 @@
 import os
 import psycopg2
 from flask import Flask, request, jsonify, render_template
+from datetime import datetime
 
 app = Flask(__name__)
 
-# Helper function to connect to the database
 def get_db_connection():
+    """
+    Helper function to establish a connection to the Heroku PostgreSQL database.
+    Returns: A database connection object.
+    """
     DATABASE_URL = os.environ.get('DATABASE_URL')
     if not DATABASE_URL:
-        raise RuntimeError("DATABASE_URL is not set.")
+        raise RuntimeError("DATABASE_URL environment variable is not set.")
     
-    # Using sslmode='require' is essential for connecting to Heroku
     conn = psycopg2.connect(DATABASE_URL, sslmode='require')
     return conn
 
-# Route 1: Receive data from Raspberry Pi (POST)
-@app.route('/api/data', methods=['POST'])
-def receive_data():
+# -----------------------------------------------------------------------------
+# Route 1: Receive Telemetry (POST)
+# This endpoint receives the full scientific data package from Raspberry Pi.
+# -----------------------------------------------------------------------------
+@app.route('/api/telemetry', methods=['POST'])
+def receive_telemetry():
+    """
+    Receives JSON data containing fatigue metrics (EAR, MAR, PERCLOS, Head Pose).
+    Stores the data into the 'drive_logs' table.
+    """
     data = request.get_json()
     
-    if not data or 'device_id' not in data or 'fatigue' not in data:
-        return jsonify({"error": "Invalid data format"}), 400
-        
-    device_id = data['device_id']
-    fatigue_level = data['fatigue']
-    
+    # Extract data safely with default values
+    device_id = data.get('device_id', 'unknown')
+    ear = data.get('ear', 0.0)
+    mar = data.get('mar', 0.0)
+    perclos = data.get('perclos', 0.0)
+    is_distracted = data.get('is_distracted', False)
+    head_yaw = data.get('head_yaw', 0.0)
+
     try:
         conn = get_db_connection()
         cur = conn.cursor()
         
-        # Save data to the database
-        cur.execute(
-            "INSERT INTO fatigue_data (device_id, fatigue_level) VALUES (%s, %s)",
-            (device_id, fatigue_level)
-        )
-        conn.commit()
+        # Insert data into the database
+        query = """
+            INSERT INTO drive_logs 
+            (device_id, ear_value, mar_value, perclos_score, is_distracted, head_yaw) 
+            VALUES (%s, %s, %s, %s, %s, %s)
+        """
+        cur.execute(query, (device_id, ear, mar, perclos, is_distracted, head_yaw))
         
+        conn.commit()
         cur.close()
         conn.close()
         
-        return jsonify({"success": True, "message": "Data received"}), 201
-        
+        return jsonify({"status": "success", "message": "Telemetry saved"}), 201
+
     except Exception as e:
-        print(f"Database error: {e}")
+        print(f"[Error] Database insertion failed: {e}")
         return jsonify({"error": "Internal server error"}), 500
 
-# Route 2: Send data to dashboard (GET)
-@app.route('/api/data', methods=['GET'])
-def send_data_to_dashboard():
+# -----------------------------------------------------------------------------
+# Route 2: Get History (GET)
+# This endpoint provides data for the frontend graphs.
+# -----------------------------------------------------------------------------
+@app.route('/api/history', methods=['GET'])
+def get_history():
+    """
+    Fetches the last 50 recorded data points.
+    Returns JSON formatted for Chart.js visualization.
+    """
     try:
         conn = get_db_connection()
         cur = conn.cursor()
         
-        # Fetch the last 100 records
-        cur.execute("SELECT created_at, fatigue_level FROM fatigue_data ORDER BY created_at DESC LIMIT 100")
+        # Select relevant columns for the dashboard
+        cur.execute("""
+            SELECT timestamp, perclos_score, mar_value, is_distracted, head_yaw
+            FROM drive_logs 
+            ORDER BY timestamp DESC LIMIT 50
+        """)
         rows = cur.fetchall()
         
         cur.close()
         conn.close()
-        
-        # Convert data to JSON format understood by the chart
-        data_for_chart = [
-            {"timestamp": row[0].isoformat(), "fatigue": row[1]} 
-            for row in rows
-        ]
-        
-        # Return data in chronological order (reversed)
-        return jsonify(list(reversed(data_for_chart)))
-        
-    except Exception as e:
-        print(f"Database error: {e}")
-        return jsonify({"error": "Internal server error"}), 500
 
-# Route 3: Serve the main page (Dashboard)
+        # Format data: Convert timestamp to string and structure as list of dicts
+        history_data = []
+        for row in rows:
+            history_data.append({
+                "time": row[0].strftime("%H:%M:%S"),
+                "perclos": row[1],
+                "mar": row[2],
+                "distracted": row[3],
+                "head_yaw": row[4]
+            })
+        
+        # Reverse list so the graph draws from Left (oldest) to Right (newest)
+        return jsonify(list(reversed(history_data)))
+
+    except Exception as e:
+        print(f"[Error] Fetching history failed: {e}")
+        return jsonify({"error": str(e)}), 500
+
+# -----------------------------------------------------------------------------
+# Route 3: Main Dashboard (GET)
+# Serves the HTML page.
+# -----------------------------------------------------------------------------
 @app.route('/')
 def index():
-    # Serve the HTML file from the 'templates' folder
     return render_template('index.html')
 
 if __name__ == '__main__':
-    # Local run for testing purposes
     app.run(debug=True)

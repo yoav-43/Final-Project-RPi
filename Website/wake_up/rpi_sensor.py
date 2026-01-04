@@ -4,7 +4,7 @@ import random # Used to simulate sensor data
 
 # -----------------------------------------------------------------
 # !!! Update this URL to your site address after deploying to Heroku !!!
-SERVER_URL = "https://your-app-name.herokuapp.com/api/data"
+SERVER_URL = "https://wakeup-fbc50be37a8b.herokuapp.com/api/data"
 # -----------------------------------------------------------------
 
 DEVICE_ID = "rpi_living_room_01"

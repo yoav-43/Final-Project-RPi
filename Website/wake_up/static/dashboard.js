@@ -1,69 +1,94 @@
-// Asynchronous function to fetch data
-async function fetchFatigueData() {
+// Global Chart Object
+let fatigueChart;
+
+// Function to fetch data from the server
+async function fetchTelemetry() {
     try {
-        // Call the API built in Flask (GET route)
-        const response = await fetch('/api/data');
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
+        const response = await fetch('/api/history');
+        if (!response.ok) throw new Error("Network response was not ok");
+        
         const data = await response.json();
-        return data; // Returns an array of data
- 
+        updateChart(data);
     } catch (error) {
-        console.error("Could not fetch data:", error);
-        return []; // Return empty array on error
+        console.error("Error fetching data:", error);
     }
 }
- 
-// Function to draw the chart
-function createChart(data) {
-    // Get the element from HTML
+
+// Function to initialize and update the chart
+function updateChart(data) {
     const ctx = document.getElementById('fatigueChart').getContext('2d');
     
-    // Process data for Chart.js
-    // 1. Time axis (X)
-    const labels = data.map(item => 
-        new Date(item.timestamp).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })
-    );
-    // 2. Data axis (Y)
-    const fatigueLevels = data.map(item => item.fatigue);
- 
-    // Create the chart
-    new Chart(ctx, {
-        type: 'line', // Chart type (Line chart)
-        data: {
-            labels: labels,
-            datasets: [{
-                label: 'Fatigue Level (0-1)',
-                data: fatigueLevels,
-                borderColor: 'rgb(255, 99, 132)',
-                backgroundColor: 'rgba(255, 99, 132, 0.2)',
-                fill: true,
-                tension: 0.1
-            }]
-        },
-        options: {
-            responsive: true,
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    suggestedMax: 1.0 // Set Y axis from 0 to 1
-                }
+    // Extract arrays for X-axis (Time) and Y-axis (Values)
+    const labels = data.map(entry => entry.time);
+    const perclosValues = data.map(entry => entry.perclos);
+    const marValues = data.map(entry => entry.mar);
+
+    if (!fatigueChart) {
+        // Create Chart for the first time
+        fatigueChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Fatigue Level (PERCLOS %)',
+                        data: perclosValues,
+                        borderColor: 'rgb(255, 99, 132)', // Red
+                        backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                        fill: true,
+                        tension: 0.3,
+                        yAxisID: 'y'
+                    },
+                    {
+                        label: 'Yawning (MAR)',
+                        data: marValues,
+                        borderColor: 'rgb(54, 162, 235)', // Blue
+                        backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                        borderDash: [5, 5], // Dashed line
+                        tension: 0.3,
+                        yAxisID: 'y1' // Use a separate axis if scaling is different
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                interaction: {
+                    mode: 'index',
+                    intersect: false,
+                },
+                scales: {
+                    y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        beginAtZero: true,
+                        max: 100, // PERCLOS is 0-100%
+                        title: { display: true, text: 'Fatigue (%)' }
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        beginAtZero: true,
+                        suggestedMax: 1.0, // MAR is usually 0.0 - 1.0
+                        grid: { drawOnChartArea: false }, // Don't show grid lines for this axis
+                        title: { display: true, text: 'Mouth Openness (Ratio)' }
+                    }
+                },
+                animation: { duration: 0 } // Disable animation for smoother realtime updates
             }
-        }
-    });
-}
- 
-// Initialize process when page loads
-async function initDashboard() {
-    const data = await fetchFatigueData();
-    if (data.length > 0) {
-        createChart(data);
+        });
     } else {
-        console.log("No data to display.");
-        // Can display a message to the user if no data
+        // Update existing chart data without re-creating the object
+        fatigueChart.data.labels = labels;
+        fatigueChart.data.datasets[0].data = perclosValues;
+        fatigueChart.data.datasets[1].data = marValues;
+        fatigueChart.update();
     }
 }
- 
-// Call the main function
-initDashboard();
+
+// Refresh data every 2 seconds
+setInterval(fetchTelemetry, 2000);
+
+// Initial load
+fetchTelemetry();
