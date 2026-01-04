@@ -16,7 +16,7 @@ from datetime import datetime
 app = Flask(__name__)
 
 def get_db_connection():
-    """ Establishes a secure connection to Heroku PostgreSQL. """
+    """ Establishes a secure connection to Heroku PostgreSQL using SSL. """
     DATABASE_URL = os.environ.get('DATABASE_URL')
     conn = psycopg2.connect(DATABASE_URL, sslmode='require')
     return conn
@@ -25,7 +25,10 @@ def get_db_connection():
 
 @app.route('/api/start_drive', methods=['POST'])
 def start_drive():
-    """ Initiates a new drive session. Returns a unique drive_id. """
+    """ 
+    Initiates a new drive session in the database. 
+    Returns the unique 'drive_id' to the client. 
+    """
     data = request.json
     device_id = data.get('device_id', 'unknown_device')
     
@@ -43,7 +46,10 @@ def start_drive():
 
 @app.route('/api/end_drive', methods=['POST'])
 def end_drive():
-    """ Finalizes a session and saves the Cloudinary video URL. """
+    """ 
+    Finalizes a drive session by updating the end_time and storing 
+     the permanent Cloudinary video link. 
+    """
     data = request.json
     drive_id = data.get('drive_id')
     video_url = data.get('video_url')
@@ -59,11 +65,44 @@ def end_drive():
     conn.close()
     return jsonify({"status": "drive_ended"})
 
-# --- DASHBOARD ROUTES ---
+# --- TELEMETRY INGESTION ---
+
+@app.route('/api/telemetry', methods=['POST'])
+def receive_telemetry():
+    """ 
+    Receives real-time metrics (EAR, PERCLOS, Pose) from the RPi 
+    and logs them into the drive_logs table. 
+    """
+    data = request.json
+    drive_id = data.get('drive_id')
+    ear = data.get('ear', 0.0)
+    is_distracted = data.get('is_distracted', False)
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        # Log the specific telemetry entry
+        cur.execute(
+            "INSERT INTO drive_logs (drive_id, ear_value, is_distracted) VALUES (%s, %s, %s)",
+            (drive_id, ear, is_distracted)
+        )
+        # Update session heartbeat and alert counts
+        cur.execute("UPDATE drives SET end_time = CURRENT_TIMESTAMP WHERE id = %s", (drive_id,))
+        if is_distracted:
+            cur.execute("UPDATE drives SET total_alerts = total_alerts + 1 WHERE id = %s", (drive_id,))
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        return jsonify({"status": "success"}), 201
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# --- DASHBOARD VIEWS ---
 
 @app.route('/')
 def index():
-    """ Renders the fleet overview dashboard. """
+    """ Renders the main fleet manager overview with all sessions. """
     conn = get_db_connection()
     cur = conn.cursor()
     cur.execute("""
@@ -71,17 +110,14 @@ def index():
         FROM drives ORDER BY start_time DESC
     """)
     drives = cur.fetchall()
-    
-    total_drives = len(drives)
     total_alerts = sum(d[4] for d in drives) if drives else 0
-    
     cur.close()
     conn.close()
-    return render_template('index.html', drives=drives, total_drives=total_drives, total_alerts=total_alerts)
+    return render_template('index.html', drives=drives, total_alerts=total_alerts)
 
 @app.route('/drive/<int:drive_id>')
 def drive_dashboard(drive_id):
-    """ Renders detailed analytics and video player for a specific drive. """
+    """ Renders detailed analytics and video player for a specific drive session. """
     conn = get_db_connection()
     cur = conn.cursor()
     cur.execute("SELECT id, device_id, start_time, end_time, total_alerts, video_url FROM drives WHERE id = %s", (drive_id,))
