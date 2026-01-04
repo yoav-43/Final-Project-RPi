@@ -7,104 +7,98 @@ app = Flask(__name__)
 
 def get_db_connection():
     """
-    Helper function to establish a connection to the Heroku PostgreSQL database.
-    Returns: A database connection object.
+    Establishes a secure connection to the Heroku PostgreSQL database.
     """
     DATABASE_URL = os.environ.get('DATABASE_URL')
-    if not DATABASE_URL:
-        raise RuntimeError("DATABASE_URL environment variable is not set.")
-    
     conn = psycopg2.connect(DATABASE_URL, sslmode='require')
     return conn
 
 # -----------------------------------------------------------------------------
-# Route 1: Receive Telemetry (POST)
-# This endpoint receives the full scientific data package from Raspberry Pi.
+# API: Receive Telemetry (POST)
+# Receives full JSON payload from Raspberry Pi and saves to DB.
 # -----------------------------------------------------------------------------
 @app.route('/api/telemetry', methods=['POST'])
 def receive_telemetry():
-    """
-    Receives JSON data containing fatigue metrics (EAR, MAR, PERCLOS, Head Pose).
-    Stores the data into the 'drive_logs' table.
-    """
     data = request.get_json()
     
-    # Extract data safely with default values
+    # Extract data with safe defaults
     device_id = data.get('device_id', 'unknown')
     ear = data.get('ear', 0.0)
     mar = data.get('mar', 0.0)
     perclos = data.get('perclos', 0.0)
     is_distracted = data.get('is_distracted', False)
+    
+    # Extract 3D Head Pose
     head_yaw = data.get('head_yaw', 0.0)
+    head_pitch = data.get('head_pitch', 0.0)
+    head_roll = data.get('head_roll', 0.0)
 
     try:
         conn = get_db_connection()
         cur = conn.cursor()
         
-        # Insert data into the database
+        # Insert all metrics into the database
         query = """
             INSERT INTO drive_logs 
-            (device_id, ear_value, mar_value, perclos_score, is_distracted, head_yaw) 
-            VALUES (%s, %s, %s, %s, %s, %s)
+            (device_id, ear_value, mar_value, perclos_score, is_distracted, head_yaw, head_pitch, head_roll) 
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
         """
-        cur.execute(query, (device_id, ear, mar, perclos, is_distracted, head_yaw))
+        cur.execute(query, (device_id, ear, mar, perclos, is_distracted, head_yaw, head_pitch, head_roll))
         
         conn.commit()
         cur.close()
         conn.close()
         
-        return jsonify({"status": "success", "message": "Telemetry saved"}), 201
+        return jsonify({"status": "success"}), 201
 
     except Exception as e:
-        print(f"[Error] Database insertion failed: {e}")
-        return jsonify({"error": "Internal server error"}), 500
+        print(f"[Error] DB Insert: {e}")
+        return jsonify({"error": str(e)}), 500
 
 # -----------------------------------------------------------------------------
-# Route 2: Get History (GET)
-# This endpoint provides data for the frontend graphs.
+# API: Get History (GET)
+# Fetches recent history for the Dashboard Graphs.
 # -----------------------------------------------------------------------------
 @app.route('/api/history', methods=['GET'])
 def get_history():
-    """
-    Fetches the last 50 recorded data points.
-    Returns JSON formatted for Chart.js visualization.
-    """
     try:
         conn = get_db_connection()
         cur = conn.cursor()
         
-        # Select relevant columns for the dashboard
+        # Fetch last 100 records for a detailed graph history
         cur.execute("""
-            SELECT timestamp, perclos_score, mar_value, is_distracted, head_yaw
+            SELECT timestamp, perclos_score, ear_value, mar_value, 
+                   head_yaw, head_pitch, head_roll, is_distracted 
             FROM drive_logs 
-            ORDER BY timestamp DESC LIMIT 50
+            ORDER BY timestamp DESC LIMIT 100
         """)
         rows = cur.fetchall()
         
         cur.close()
         conn.close()
 
-        # Format data: Convert timestamp to string and structure as list of dicts
+        # Format data for JSON response
         history_data = []
         for row in rows:
             history_data.append({
                 "time": row[0].strftime("%H:%M:%S"),
                 "perclos": row[1],
-                "mar": row[2],
-                "distracted": row[3],
-                "head_yaw": row[4]
+                "ear": row[2],
+                "mar": row[3],
+                "yaw": row[4],
+                "pitch": row[5],
+                "roll": row[6],
+                "distracted": row[7]
             })
         
-        # Reverse list so the graph draws from Left (oldest) to Right (newest)
+        # Reverse to show chronological order (Left to Right)
         return jsonify(list(reversed(history_data)))
 
     except Exception as e:
-        print(f"[Error] Fetching history failed: {e}")
         return jsonify({"error": str(e)}), 500
 
 # -----------------------------------------------------------------------------
-# Route 3: Main Dashboard (GET)
-# Serves the HTML page.
+# Route: Web Interface
 # -----------------------------------------------------------------------------
 @app.route('/')
 def index():

@@ -3,32 +3,152 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Driver Fatigue Monitor</title>
+    <title>Safety Manager Dashboard</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; background: #f4f7f6; }
-        h1 { color: #333; }
-        .container { 
-            width: 90%; 
-            max-width: 800px;
-            margin: 20px auto; 
-            background: white; 
+        /* Dark Theme Styling */
+        body { 
+            background-color: #1e1e2f; 
+            color: #e0e0e0; 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            margin: 0; 
             padding: 20px; 
-            border-radius: 10px; 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1); 
         }
-        canvas { max-height: 400px; }
-        .status-box { margin-top: 20px; font-weight: bold; color: #555; }
+        
+        h1 { 
+            text-align: center; 
+            margin-bottom: 30px; 
+            color: #ffffff; 
+            letter-spacing: 1.5px; 
+            text-transform: uppercase;
+        }
+        
+        /* Stats Summary Bar */
+        .stats-container {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 30px;
+        }
+        .stat-box { 
+            text-align: center; 
+            background: #27293d; 
+            padding: 20px; 
+            border-radius: 8px; 
+            width: 250px; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        .stat-label { font-size: 0.9rem; color: #9a9a9a; margin-bottom: 5px; }
+        .stat-number { font-size: 2.5rem; font-weight: bold; }
+        .red-text { color: #ff6384; }
+        .blue-text { color: #36a2eb; }
+        .green-text { color: #4bc0c0; }
+
+        /* Dashboard Grid Layout (2x2) */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: #27293d;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        .card h3 { 
+            margin-top: 0; 
+            font-size: 1.1rem; 
+            color: #d1d1d1; 
+            border-bottom: 1px solid #3d3d5c;
+            padding-bottom: 10px;
+        }
+        
+        canvas { max-height: 300px; width: 100%; }
+
+        /* Alert Log Table */
+        .table-container {
+            margin-top: 30px;
+            max-width: 1600px;
+            margin-left: auto;
+            margin-right: auto;
+            background: #27293d;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { text-align: left; padding: 12px; border-bottom: 1px solid #3d3d5c; }
+        th { color: #d65b95; font-weight: bold; }
+        tr:hover { background-color: #2f3147; }
+        
+        .alert-fatigue { color: #ff6384; font-weight: bold; }
+        .alert-distraction { color: #36a2eb; font-weight: bold; }
+
     </style>
 </head>
 <body>
-    <h1>Live Driver Fatigue Status</h1>
-    <div class="container">
-        <canvas id="fatigueChart"></canvas>
-        <div class="status-box">
-            Real-time monitoring of PERCLOS (Fatigue) and MAR (Yawning)
+
+    <h1>Driver Fatigue Monitoring Center</h1>
+
+    <div class="stats-container">
+        <div class="stat-box">
+            <div class="stat-label">Fatigue Incidents</div>
+            <div id="fatigueCount" class="stat-number red-text">0</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-label">Distraction Events</div>
+            <div id="distractionCount" class="stat-number blue-text">0</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-label">System Status</div>
+            <div id="currentStatus" class="stat-number green-text">Online</div>
         </div>
     </div>
+
+    <div class="dashboard-grid">
+        
+        <div class="card">
+            <h3>Fatigue Level (PERCLOS %)</h3>
+            <canvas id="perclosChart"></canvas>
+        </div>
+
+        <div class="card">
+            <h3>Facial Metrics (EAR & MAR)</h3>
+            <canvas id="faceChart"></canvas>
+        </div>
+
+        <div class="card">
+            <h3>Head Pose (Yaw / Pitch / Roll)</h3>
+            <canvas id="headChart"></canvas>
+        </div>
+
+        <div class="card">
+            <h3>Alerts Timeline</h3>
+            <canvas id="alertsChart"></canvas>
+        </div>
+    </div>
+
+    <div class="table-container">
+        <h3>Session Alert Log</h3>
+        <table id="alertsTable">
+            <thead>
+                <tr>
+                    <th>Timestamp</th>
+                    <th>Alert Type</th>
+                    <th>Measured Value</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                </tbody>
+        </table>
+    </div>
+
     <script src="/static/dashboard.js"></script>
 </body>
 </html>

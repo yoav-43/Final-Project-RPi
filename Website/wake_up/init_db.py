@@ -3,43 +3,43 @@ import psycopg2
 
 def initialize_database():
     """
-    Connects to the PostgreSQL database and creates the necessary table
-    for storing comprehensive driver monitoring data.
+    Connects to the PostgreSQL database and creates the 'drive_logs' table.
+    This version includes columns for all 3 Head Pose angles (Yaw, Pitch, Roll)
+    to support the advanced dashboard analytics.
     """
-    # 1. Get the database URL from Heroku environment variables
+    # 1. Get Database URL from Environment Variables
     DATABASE_URL = os.environ.get('DATABASE_URL')
-
     if not DATABASE_URL:
         raise RuntimeError("DATABASE_URL is not set. Ensure the Postgres addon is provisioned.")
 
     print("Connecting to database...")
-    # 2. Connect to the database (sslmode is required for Heroku)
     conn = psycopg2.connect(DATABASE_URL, sslmode='require')
     cur = conn.cursor()
 
-    # 3. Drop old tables if they exist to ensure a fresh schema
+    # 2. Clean up old tables to ensure schema consistency
     print("Dropping old tables if they exist...")
-    cur.execute("DROP TABLE IF EXISTS fatigue_data;") # Cleanup old version
-    cur.execute("DROP TABLE IF EXISTS drive_logs;")   # Cleanup previous attempts
+    cur.execute("DROP TABLE IF EXISTS drive_logs;")
 
-    # 4. Create the new 'drive_logs' table with scientific metrics
-    print("Creating 'drive_logs' table...")
+    # 3. Create the new table with full telemetry columns
+    print("Creating 'drive_logs' table with extended metrics...")
     cur.execute("""
         CREATE TABLE drive_logs (
             id SERIAL PRIMARY KEY,
             device_id VARCHAR(50),
             timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            ear_value FLOAT,           -- Eye Aspect Ratio (Instantaneous openness)
-            mar_value FLOAT,           -- Mouth Aspect Ratio (Yawning detection)
-            perclos_score FLOAT,       -- PERCLOS % (Percentage of Eye Closure over time)
-            is_distracted BOOLEAN,     -- True if driver is looking away (Head Pose)
-            head_yaw FLOAT             -- Head rotation angle (Left/Right)
+            ear_value FLOAT,           -- Eye Aspect Ratio (Instantaneous)
+            mar_value FLOAT,           -- Mouth Aspect Ratio (Yawning)
+            perclos_score FLOAT,       -- Fatigue Score (%)
+            is_distracted BOOLEAN,     -- Boolean Flag for distraction
+            head_yaw FLOAT,            -- Head rotation (Left/Right)
+            head_pitch FLOAT,          -- Head rotation (Up/Down)
+            head_roll FLOAT            -- Head rotation (Tilt)
         );
     """)
 
-    # 5. Commit changes and close connection
+    # 4. Commit and Close
     conn.commit()
-    print("Table 'drive_logs' created successfully.")
+    print("Database initialized successfully.")
     
     cur.close()
     conn.close()
