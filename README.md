@@ -1,8 +1,8 @@
-# 🚗 WakeUp - Advanced Driver Monitoring System
+# WakeUp - Advanced Driver Monitoring System
 
 **WakeUp** is a real-time IoT safety system designed to prevent car accidents caused by driver fatigue and distraction. Powered by a Raspberry Pi, Computer Vision, and Cloud connectivity, the system monitors the driver's state and issues immediate alerts while logging data for analysis.
 
-## 🌟 Features
+## Features
 
 * **Real-time Fatigue Detection:** Uses **EAR (Eye Aspect Ratio)** to detect drowsiness and prolonged eye closure.
 * **Distraction Detection:** Uses **Head Pose Estimation** (Yaw/Pitch) to detect when the driver looks away from the road.
@@ -16,10 +16,13 @@
 
 ---
 
-## 📂 Project Structure
+## Project Structure
 
 ```text
 Final-Project-RPi/
+│
+├── archive/                     # Legacy code & backups
+│   └── driver_monitor.py        # Old main script (unused)
 │
 ├── buzzer/                      # Hardware Alert System
 │   ├── buzzer.ino               # C++ Firmware for Arduino
@@ -55,6 +58,6 @@ Final-Project-RPi/
 │   ├── mac_aliases.txt          # OS specific alias helpers
 │   └── win_aliases.txt
 │
-├── shape_predictor_68_face_landmarks.dat  # Dlib AI Model
-├── driver_monitor.py            # Legacy/Backup script
+├── .env                         # API Keys (Not tracked by Git)
+├── .gitignore                   # Git configuration
 └── README.md                    # Project Documentation
