@@ -1,0 +1,29 @@
+# ==========================================================
+# FINAL PROJECT ALIASES - WAKEUP MONITORING SYSTEM
+# ==========================================================
+
+# 1. DEPLOYMENT ALIAS
+# Description: Deploys only the website subdirectory to Heroku main branch.
+# Usage: Type 'deploy' to update the live dashboard.
+function deploy { 
+    Write-Host "[DEPLOY] Pushing Website/wake_up to Heroku main branch..." -ForegroundColor Cyan
+    git subtree push --prefix Website/wake_up heroku main 
+}
+
+# 2. DATABASE INITIALIZATION ALIAS
+# Description: Resets the remote PostgreSQL schema on Heroku.
+# Usage: Type 'db-init' to clear history and rebuild tables.
+function db-init { 
+    Write-Host "[DB-INIT] Resetting remote PostgreSQL schema..." -ForegroundColor Yellow
+    heroku run python init_db.py 
+}
+
+# 3. GLOBAL BACKUP ALIAS
+# Description: Stages all changes and pushes full project to GitHub origin/main.
+# Usage: Type 'backup' to sync RPi code and Website code to GitHub.
+function backup { 
+    Write-Host "[BACKUP] Syncing full project to GitHub origin/main..." -ForegroundColor Green
+    git add . 
+    git commit -m "Full project backup and synchronization" 
+    git push origin main 
+}

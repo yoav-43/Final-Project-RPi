@@ -1,0 +1,66 @@
+# ==========================================================
+# GITIGNORE FOR WAKEUP PROJECT (Python, RPi, Arduino, OS)
+# ==========================================================
+
+# --- Python & Virtual Environments ---
+__pycache__/
+*.py[cod]
+venv/
+env/
+.env
+
+# --- Operating System ---
+# Specifically ignoring files causing terminal warnings
+Thumbs.db
+[Dd]esktop.ini
+.DS_Store
+
+# --- IDEs & Editors ---
+# VS Code
+.vscode/
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.sln.docstates
+# PyCharm / IntelliJ
+.idea/
+
+# --- Arduino ---
+# Build/Output folders
+build/
+# Compiled binaries
+*.elf
+*.hex
+*.bin
+*.lock
+
+# --- MATLAB ---
+# Autosaves and backups
+*.asv
+*.m~
+# Compiled files & Simulink cache
+*.mex*
+*.slxc
+slprj/
+
+# --- Documentation & Binary Files ---
+# (Backed up via Google Drive, so ignored in Git)
+*.docx
+*.gdoc
+*.drawio
+*.pdf
+
+# --- SECURITY: Ignore Sensitive Files ---
+# Ensuring private credentials never reach GitHub
+**/Passwords for Raspberry Pi.gdoc
+**/SSH.gdoc
+
+# --- Google Drive Temp Files ---
+# Ignoring temporary sync files causing 'broken ref' warnings
+~$*
+*.dat
+
+# video
+*.avi
+*.mp4

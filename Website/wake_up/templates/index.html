@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Fleet Overview | WakeUp Monitoring</title>
+    <style>
+        body { background: #1a1a2e; color: #fff; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 30px; }
+        .stats-container { display: flex; justify-content: center; gap: 40px; margin-bottom: 40px; }
+        .card { background: #16213e; padding: 25px; border-radius: 15px; border: 1px solid #0f3460; text-align: center; min-width: 200px; }
+        .val { font-size: 2.5em; font-weight: bold; color: #4ecca3; }
+        table { width: 100%; border-collapse: collapse; background: #16213e; border-radius: 10px; overflow: hidden; }
+        th, td { padding: 18px; text-align: left; border-bottom: 1px solid #0f3460; }
+        tr:hover { background: #1f4068; cursor: pointer; }
+        .btn-video { background: #e94560; color: white; padding: 8px 15px; border-radius: 5px; text-decoration: none; font-weight: bold; }
+        .status-active { color: #4ecca3; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1 style="text-align: center;">FLEET OVERVIEW DASHBOARD</h1>
+    
+    <div class="stats-container">
+        <div class="card"><div class="label">TOTAL DRIVES</div><div class="val">{{ total_drives }}</div></div>
+        <div class="card"><div class="label">ACTIVE ALERTS</div><div class="val" style="color: #e94560;">{{ total_alerts }}</div></div>
+    </div>
+
+    <table>
+        <thead>
+            <tr><th>ID</th><th>DEVICE</th><th>START TIME</th><th>END TIME</th><th>ALERTS</th><th>RECORDING</th></tr>
+        </thead>
+        <tbody>
+            {% for drive in drives %}
+            <tr onclick="window.location.href='/drive/{{ drive[0] }}'">
+                <td>#{{ drive[0] }}</td>
+                <td>{{ drive[1] }}</td>
+                <td>{{ drive[2].strftime('%Y-%m-%d %H:%M') }}</td>
+                <td>
+                    {% if drive[3] and drive[5] %} {{ drive[3].strftime('%H:%M') }}
+                    {% else %} <span class="status-active">● Active</span> {% endif %}
+                </td>
+                <td style="color: {{ '#e94560' if drive[4] > 0 else '#4ecca3' }}">{{ drive[4] }} Events</td>
+                <td>
+                    {% if drive[5] %}
+                    <a href="{{ drive[5] }}" target="_blank" class="btn-video" onclick="event.stopPropagation();">🎥 WATCH</a>
+                    {% else %} <span style="opacity: 0.5;">Processing...</span> {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>

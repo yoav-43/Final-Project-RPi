@@ -1,0 +1,19 @@
+{
+    "device_id": "raspi_v1",
+    "base_url": "ENV_VAR",
+    "predictor_path": "shape_predictor_68_face_landmarks.dat",
+    "video_temp_file": "drive_video.mp4",
+    "thresholds": {
+        "ear": 0.25,
+        "head_yaw": 22,
+        "head_pitch": -15,
+        "perclos_fatigue_limit": 25
+    },
+   "cloudinary": {
+        "cloud_name": "ENV_VAR",
+        "api_key": "ENV_VAR",
+        "api_secret": "ENV_VAR"
+    },
+    "arduino_port": "/dev/ttyACM0",
+    "gps_port": "/dev/ttyAMA0"
+}

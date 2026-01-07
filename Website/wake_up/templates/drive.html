@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Drive Analytics #{{ drive.id }}</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { background: #1a1a2e; color: #fff; font-family: sans-serif; padding: 20px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .chart-card { background: #16213e; padding: 15px; border-radius: 10px; margin-bottom: 20px; }
+        video { width: 100%; max-height: 400px; border-radius: 5px; background: #000; }
+        table { width: 100%; border-collapse: collapse; background: #16213e; margin-top: 20px; }
+        th, td { padding: 12px; border-bottom: 1px solid #0f3460; text-align: center; }
+        .alert-row { color: #e94560; font-weight: bold; background: rgba(233, 69, 96, 0.1); }
+    </style>
+</head>
+<body>
+    <a href="/" style="color: #4ecca3; text-decoration: none; font-weight: bold;">← BACK TO FLEET</a>
+    <h2>Analytics: Session #{{ drive.id }} (Device: {{ drive.device }})</h2>
+
+    <div class="grid">
+        <div class="chart-card" style="grid-column: span 2; text-align: center;">
+            <h3>Drive Recording</h3>
+            {% if drive.video %}
+                <video controls><source src="{{ drive.video }}" type="video/mp4"></video>
+            {% else %}
+                <p style="padding: 40px; opacity: 0.5;">Processing recording...</p>
+            {% endif %}
+        </div>
+
+        <div class="chart-card"><canvas id="perclosChart"></canvas></div>
+        <div class="chart-card"><canvas id="earChart"></canvas></div>
+        <div class="chart-card"><canvas id="yawChart"></canvas></div>
+        <div class="chart-card"><canvas id="pitchChart"></canvas></div>
+    </div>
+
+    <h3>Detailed Alert Logs</h3>
+    <table>
+        <thead><tr><th>Time</th><th>Alert Type</th><th>Severity</th></tr></thead>
+        <tbody id="alertLogBody"></tbody>
+    </table>
+
+    <script> const DRIVE_ID = {{ drive.id }}; </script>
+    <script src="{{ url_for('static', filename='dashboard.js') }}"></script>
+</body>
+</html>
