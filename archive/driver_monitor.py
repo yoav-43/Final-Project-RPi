@@ -24,7 +24,7 @@ import os
 # =============================================================================
 # SYSTEM CONFIGURATION
 # =============================================================================
-BASE_URL = "https://wakeup-fbc50be37a8b.herokuapp.com/api"
+BASE_URL = 
 DEVICE_ID = "raspi_v1"
 PREDICTOR_PATH = "shape_predictor_68_face_landmarks.dat"
 VIDEO_TEMP_FILE = "drive_video.mp4" 
@@ -39,9 +39,9 @@ except Exception as e:
     arduino = None
 
 cloudinary.config( 
-    cloud_name = "dei1fd8k6", 
-    api_key = "545933773654545", 
-    api_secret = "434wCTl3T4jlwQKpjiX8Rp2Bc6s" 
+    cloud_name = "", 
+    api_key = "", 
+    api_secret = "" 
 )
 
 # Thresholds for analytics
