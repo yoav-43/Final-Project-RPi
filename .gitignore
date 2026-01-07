@@ -1,3 +1,7 @@
+# ==========================================================
+# GITIGNORE FOR WAKEUP PROJECT (Python, RPi, Arduino, OS)
+# ==========================================================
+
 # --- Python & Virtual Environments ---
 __pycache__/
 *.py[cod]
@@ -6,8 +10,9 @@ env/
 .env
 
 # --- Operating System ---
+# Specifically ignoring files causing terminal warnings
 Thumbs.db
-Desktop.ini
+[Dd]esktop.ini
 .DS_Store
 
 # --- IDEs & Editors ---
@@ -47,9 +52,11 @@ slprj/
 *.pdf
 
 # --- SECURITY: Ignore Sensitive Files ---
+# Ensuring private credentials never reach GitHub
 **/Passwords for Raspberry Pi.gdoc
 **/SSH.gdoc
 
 # --- Google Drive Temp Files ---
+# Ignoring temporary sync files causing 'broken ref' warnings
 ~$*
 *.dat
