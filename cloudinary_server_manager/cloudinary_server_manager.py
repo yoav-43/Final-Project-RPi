@@ -5,19 +5,27 @@ import cloudinary
 import cloudinary.uploader
 from dotenv import load_dotenv
 
-# Fix import path for running standalone
+# Allow standalone execution from any working directory.
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from logger.logger import SystemLogger
 
 class CloudinaryManager:
     """
-    Handles video uploads to Cloudinary storage.
+    Handles post-session video uploads to Cloudinary.
+    Configures the Cloudinary SDK with the provided credentials and
+    exposes a single upload method that returns the CDN URL of the
+    transcoded video.
     """
 
     def __init__(self, cloud_name, api_key, api_secret):
         """
-        Configures the Cloudinary API.
+        Initialises the Cloudinary SDK with the account credentials.
+
+        Args:
+            cloud_name (str): Cloudinary cloud name.
+            api_key (str): Cloudinary API key.
+            api_secret (str): Cloudinary API secret.
         """
         self.logger = SystemLogger("Cloudinary")
         try:
@@ -32,13 +40,19 @@ class CloudinaryManager:
 
     def upload_video(self, file_path):
         """
-        Uploads a video file to the cloud.
+        Uploads a local video file to Cloudinary and returns its CDN URL.
+
+        The file is uploaded with resource_type="video" and transcoded to
+        MP4 (H.264), making it universally playable in web browsers.
+        The resulting URL is stored in the database and used by the
+        web dashboard to embed the session recording.
 
         Args:
-            file_path (str): Local path to the .mp4 file.
+            file_path (str): Absolute or relative path to the .avi file.
 
         Returns:
-            str: The secure URL of the uploaded video, or None if failed.
+            str | None: The HTTPS CDN URL of the uploaded video,
+                        or None if the upload failed.
         """
         if not os.path.exists(file_path):
             self.logger.log("WARNING", f"File not found: {file_path}")
@@ -46,7 +60,6 @@ class CloudinaryManager:
 
         try:
             self.logger.log("INFO", f"Uploading {file_path}...")
-            # resource_type="video" is crucial for .mp4 uploads
             response = cloudinary.uploader.upload(file_path, resource_type="video", format="mp4")
             url = response.get("secure_url")
             self.logger.log("INFO", f"Upload successful: {url}")
@@ -55,14 +68,13 @@ class CloudinaryManager:
             self.logger.log("ERROR", f"Upload failed: {e}")
             return None
 
-# --- TEST MODE ---
+# --- Standalone Test ---
 if __name__ == "__main__":
     print("--- Starting Cloudinary Upload Test ---")
     
-    # 1. Load Environment Variables (Critical step!)
+    # Load credentials from the project root .env file.
     load_dotenv()
 
-    # 2. Locate Config File
     config_path = os.path.join("monitor", "config.json")
     if not os.path.exists(config_path):
          config_path = os.path.join("..", "monitor", "config.json")
@@ -71,14 +83,13 @@ if __name__ == "__main__":
         print(f"Error: Config file not found at {config_path}")
         sys.exit(1)
 
-    # 3. Load Credentials & Overwrite with Env Vars
     try:
         with open(config_path, 'r') as f:
             config = json.load(f)
             
         creds = config.get("cloudinary", {})
         
-        # FIX: Overwrite the "ENV_VAR" placeholders with real keys from .env
+        # Overwrite the "ENV_VAR" placeholders with real credentials from .env.
         creds['cloud_name'] = os.getenv('CLOUDINARY_CLOUD_NAME')
         creds['api_key'] = os.getenv('CLOUDINARY_API_KEY')
         creds['api_secret'] = os.getenv('CLOUDINARY_API_SECRET')
@@ -91,10 +102,8 @@ if __name__ == "__main__":
         print("Error: API Keys not found in .env file.")
         sys.exit(1)
 
-    # Initialize Manager with real credentials
     manager = CloudinaryManager(**creds)
 
-    # 4. Locate Video File
     video_file = "test_output.avi"
     
     if not os.path.exists(video_file):

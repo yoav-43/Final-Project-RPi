@@ -1,10 +1,12 @@
 """
-DRIVER MONITORING BACKEND - VERSION 4.0
----------------------------------------------------------------------------------------
-Description:
-    Flask-based API for session management, telemetry ingestion (PostgreSQL), 
-    and rendering management dashboards.
----------------------------------------------------------------------------------------
+WakeUp — Driver Monitoring Backend
+===================================
+Flask application that serves as the central data hub for the WakeUp system.
+Provides a REST API for the Raspberry Pi to register drive sessions and stream
+telemetry, and renders HTML dashboards for fleet overview and per-session analytics.
+
+Database: Heroku Postgres (psycopg2, SSL required)
+Deployment: Heroku (gunicorn, see Procfile)
 """
 
 import os
@@ -15,16 +17,21 @@ from datetime import datetime
 app = Flask(__name__)
 
 def get_db_connection():
-    """ Establish secure connection to Heroku Postgres. """
+    """Opens a new SSL-secured connection to the Heroku Postgres database."""
     return psycopg2.connect(os.environ.get('DATABASE_URL'), sslmode='require')
 
 # =============================================================================
-# DRIVE SESSION API
+# Drive Session API
 # =============================================================================
 
 @app.route('/api/start_drive', methods=['POST'])
 def start_drive():
-    """ Registers a new drive session in the database. """
+    """
+    Registers a new drive session in the database.
+
+    Request body: {"device_id": str}
+    Response:     {"status": "success", "drive_id": int}
+    """
     data = request.json
     device_id = data.get('device_id', 'unknown_raspi')
     try:
@@ -43,7 +50,12 @@ def start_drive():
 
 @app.route('/api/end_drive', methods=['POST'])
 def end_drive():
-    """ Finalizes session and stores Cloudinary video URL. """
+    """
+    Finalizes a drive session by recording the end time and Cloudinary video URL.
+
+    Request body: {"drive_id": int, "video_url": str}
+    Response:     {"status": "success"}
+    """
     data = request.json
     drive_id = data.get('drive_id')
     video_url = data.get('video_url')
@@ -61,27 +73,37 @@ def end_drive():
         return jsonify({"error": str(e)}), 500
 
 # =============================================================================
-# TELEMETRY API
+# Telemetry API
 # =============================================================================
 
 @app.route('/api/telemetry', methods=['POST'])
 def receive_telemetry():
-    """ Ingests real-time metrics and updates the session heartbeat. """
+    """
+    Ingests a real-time telemetry sample from the Raspberry Pi.
+    Inserts a row into drive_logs and updates the session heartbeat
+    and alert counter in the parent drives table.
+
+    Request body: {"drive_id", "ear", "perclos", "is_distracted",
+                   "head_yaw", "head_pitch", "latitude", "longitude"}
+    Response:     {"status": "success"}
+    """
     data = request.json
     drive_id = data.get('drive_id')
     try:
         conn = get_db_connection()
         cur = conn.cursor()
         
-        # Log granular data for charts
+        # Insert the granular telemetry record for chart rendering.
         cur.execute("""
             INSERT INTO drive_logs (drive_id, ear_value, perclos_score, is_distracted, head_yaw, head_pitch) 
             VALUES (%s, %s, %s, %s, %s, %s)
         """, (drive_id, data.get('ear'), data.get('perclos'), data.get('is_distracted'), 
               data.get('head_yaw'), data.get('head_pitch')))
         
-        # Update heartbeat and alert counter in parent table
+        # Update the session heartbeat so end_time reflects the last known activity.
         cur.execute("UPDATE drives SET end_time = CURRENT_TIMESTAMP WHERE id = %s", (drive_id,))
+
+        # Increment the alert counter whenever a fatigue or distraction event is detected.
         if data.get('is_distracted') or data.get('perclos', 0) > 25:
             cur.execute("UPDATE drives SET total_alerts = total_alerts + 1 WHERE id = %s", (drive_id,))
         
@@ -93,7 +115,12 @@ def receive_telemetry():
 
 @app.route('/api/history/<int:drive_id>')
 def get_drive_history(drive_id):
-    """ Returns data points for Chart.js rendering and alert tables. """
+    """
+    Returns all telemetry records for a session, ordered chronologically.
+    Consumed by dashboard.js to render the Chart.js time-series charts.
+
+    Response: JSON array of {time, ear, perclos, yaw, pitch, distracted}
+    """
     conn = get_db_connection()
     cur = conn.cursor()
     cur.execute("""
@@ -109,12 +136,15 @@ def get_drive_history(drive_id):
     } for r in rows])
 
 # =============================================================================
-# WEB DASHBOARDS
+# Web Dashboards
 # =============================================================================
 
 @app.route('/')
 def index():
-    """ Fleet Overview Dashboard. """
+    """
+    Renders the fleet overview dashboard listing all drive sessions
+    with summary statistics (total drives, total alerts).
+    """
     conn = get_db_connection()
     cur = conn.cursor()
     cur.execute("SELECT id, device_id, start_time, end_time, total_alerts, video_url FROM drives ORDER BY start_time DESC")
@@ -126,7 +156,10 @@ def index():
 
 @app.route('/drive/<int:drive_id>')
 def drive_dashboard(drive_id):
-    """ Detailed Analysis Dashboard for a specific session. """
+    """
+    Renders the per-session analytics dashboard with Chart.js charts,
+    an embedded video player, and a detailed alert log table.
+    """
     conn = get_db_connection()
     cur = conn.cursor()
     cur.execute("SELECT id, device_id, start_time, end_time, total_alerts, video_url FROM drives WHERE id = %s", (drive_id,))

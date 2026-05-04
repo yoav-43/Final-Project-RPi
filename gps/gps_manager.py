@@ -8,7 +8,9 @@ from logger.logger import SystemLogger
 
 class GPSManager:
     """
-    Reads GPS data from a serial module (e.g., NEO-6M).
+    Reads NMEA sentences from a serial GPS module (e.g., u-blox NEO-6M)
+    in a background daemon thread and exposes the latest coordinates
+    to the main application via a thread-safe getter.
     """
 
     def __init__(self, port='/dev/ttyAMA0', baud_rate=38400):
@@ -21,7 +23,7 @@ class GPSManager:
         self.thread = None
 
     def start(self):
-        """Starts the GPS reading thread."""
+        """Spawns the GPS reader as a daemon thread and returns immediately."""
         self.running = True
         self.thread = threading.Thread(target=self._read_gps_loop)
         self.thread.daemon = True
@@ -29,27 +31,32 @@ class GPSManager:
         self.logger.log("INFO", "GPS Background thread started.")
 
     def _read_gps_loop(self):
-        """Internal loop to parse NMEA sentences."""
+        """
+        Internal loop that continuously reads lines from the serial port
+        and forwards GPGGA/GNGGA sentences to the parser.
+        If the hardware is unavailable, logs a warning and exits gracefully
+        so the rest of the system continues without GPS data.
+        """
         try:
-            # Note: For testing without HW, this might fail immediately
             with serial.Serial(self.port, self.baud_rate, timeout=1) as ser:
                 while self.running:
                     line = ser.readline().decode('utf-8', errors='ignore')
-                    # self.logger.log("INFO", "serial line: " + line)
                     if line.startswith("$GPGGA") or line.startswith("$GNGGA"):
                         self._parse_gpgqa(line)
         except Exception as e:
             self.logger.log("WARNING", f"GPS Hardware unavailable: {e}")
-            # Mock data for testing if hardware fails
             self.current_lat = 0.0000
             self.current_lon = 0.0000
 
     def _parse_gpgqa(self, line):
-        """Simple NMEA parser (can be replaced with pynmea2 lib)."""
+        """
+        Parses a GPGGA/GNGGA NMEA sentence and updates the stored coordinates.
+        Converts the raw DDMM.MMMM format to decimal degrees:
+            decimal = DD + (MM.MMMM / 60)
+        """
         try:
             parts = line.split(',')
             if parts[2] and parts[4]:
-                # Convert DDMM.MMMM to Decimal Degrees
                 lat = float(parts[2])
                 lon = float(parts[4])
                 self.current_lat = int(lat / 100) + (lat % 100) / 60
@@ -58,13 +65,20 @@ class GPSManager:
             pass
 
     def get_location(self):
-        """Returns the last known (lat, lon)."""
+        """
+        Returns the most recently parsed GPS coordinates.
+
+        Returns:
+            tuple: (latitude, longitude) in decimal degrees.
+                   Returns (0.0, 0.0) if no fix has been acquired.
+        """
         return self.current_lat, self.current_lon
 
     def stop(self):
+        """Signals the background thread to exit on its next iteration."""
         self.running = False
 
-# --- Main Execution for Testing ---
+# --- Standalone Test ---
 if __name__ == "__main__":
     gps = GPSManager()
     gps.start()

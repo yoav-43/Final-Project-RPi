@@ -1,6 +1,11 @@
 """
-DATABASE INITIALIZATION SCRIPT
-Resets the Postgres schema for a clean deployment.
+WakeUp — Database Initialisation Script
+========================================
+Drops and recreates the PostgreSQL schema for a clean deployment.
+Run once on first deploy, or whenever a full schema reset is required.
+
+Usage:
+    heroku run python init_db.py
 """
 import os
 import psycopg2
@@ -10,11 +15,12 @@ def init():
     conn = psycopg2.connect(DATABASE_URL, sslmode='require')
     cur = conn.cursor()
     
+    # Drop existing tables in reverse dependency order to respect foreign key constraints.
     print("[DB] Dropping old tables...")
     cur.execute("DROP TABLE IF EXISTS drive_logs CASCADE;")
     cur.execute("DROP TABLE IF EXISTS drives CASCADE;")
 
-    # Table 1: High-level Session Data
+    # drives: one row per drive session, holds high-level session metadata.
     print("[DB] Creating 'drives' table...")
     cur.execute("""
         CREATE TABLE drives (
@@ -27,7 +33,8 @@ def init():
         );
     """)
 
-    # Table 2: Detailed Telemetry for Analytics
+    # drive_logs: one row per telemetry sample (~1 Hz), holds granular metrics
+    # used to render the Chart.js time-series charts on the analytics dashboard.
     print("[DB] Creating 'drive_logs' table...")
     cur.execute("""
         CREATE TABLE drive_logs (

@@ -7,14 +7,18 @@ from logger.logger import SystemLogger
 
 class HerokuClient:
     """
-    Manages HTTP communication with the backend server (Heroku).
+    HTTP client for the WakeUp Flask backend hosted on Heroku.
+    Manages drive session lifecycle (start/end) and streams telemetry
+    data asynchronously to avoid blocking the video processing loop.
     """
 
     def __init__(self, base_url, device_id):
         """
         Args:
-            base_url (str): The API root URL.
-            device_id (str): The unique ID of this RPi.
+            base_url (str): Root URL of the backend API
+                            (e.g., https://your-app.herokuapp.com/api).
+            device_id (str): Unique identifier for this Raspberry Pi unit,
+                             used to tag sessions in the database.
         """
         self.base_url = base_url
         self.device_id = device_id
@@ -23,7 +27,11 @@ class HerokuClient:
 
     def start_drive(self):
         """
-        Initiates a new drive session on the server.
+        Registers a new drive session on the server and stores the
+        returned drive ID for use in subsequent telemetry calls.
+
+        Returns:
+            int | None: The server-assigned drive ID, or None on failure.
         """
         try:
             payload = {"device_id": self.device_id}
@@ -38,7 +46,17 @@ class HerokuClient:
 
     def send_telemetry(self, ear, perclos, is_distracted, yaw, pitch, lat=0, lon=0):
         """
-        Sends telemetry data asynchronously (in a background thread).
+        Sends a telemetry sample to the backend in a background thread
+        so the call returns immediately and does not stall the video loop.
+
+        Args:
+            ear (float): Eye Aspect Ratio for the current frame.
+            perclos (float): PERCLOS score (% closed-eye frames) for the current window.
+            is_distracted (bool): True if head pose exceeded distraction thresholds.
+            yaw (float): Horizontal head rotation in degrees.
+            pitch (float): Vertical head rotation in degrees.
+            lat (float): GPS latitude in decimal degrees.
+            lon (float): GPS longitude in decimal degrees.
         """
         if not self.current_drive_id:
             return
@@ -54,7 +72,8 @@ class HerokuClient:
             "longitude": lon
         }
 
-        # Run in thread to not block the video processing loop
+        # Fire-and-forget: telemetry failures are silently discarded to
+        # prevent log spam from transient network interruptions.
         thread = threading.Thread(target=self._post_telemetry, args=(payload,))
         thread.start()
 
@@ -62,11 +81,15 @@ class HerokuClient:
         try:
             requests.post(f"{self.base_url}/telemetry", json=payload, timeout=2)
         except Exception:
-            pass # Silent fail for telemetry to avoid log spam
+            pass
 
     def end_drive(self, video_url=None):
         """
-        Finalizes the drive session with an optional video link.
+        Finalizes the drive session on the server, attaching the Cloudinary
+        video URL to the session record.
+
+        Args:
+            video_url (str | None): CDN URL of the uploaded session recording.
         """
         if not self.current_drive_id:
             return
@@ -81,7 +104,7 @@ class HerokuClient:
         except Exception as e:
             self.logger.log("ERROR", f"Failed to end drive: {e}")
 
-# --- Main Execution for Testing ---
+# --- Standalone Test ---
 if __name__ == "__main__":
     client = HerokuClient("https://fake-url.com/api", "test_device")
     print("Testing Backend Client (Simulated)...")
