@@ -2,6 +2,16 @@
 # FINAL PROJECT ALIASES - WAKEUP MONITORING SYSTEM (macOS)
 # ==========================================================
 
+# PREREQUISITES (run once before using these aliases):
+#   1. Install Heroku CLI:  curl https://cli-assets.heroku.com/install.sh | sh
+#   2. Login to Heroku:     heroku login
+#      (If MFA is enabled, generate an API token at dashboard.heroku.com/account/applications
+#       and run: export HEROKU_API_KEY=<your_token>)
+#   3. Add Heroku remote:   heroku git:remote -a wakeup
+#
+# To load these aliases, add to your ~/.zshrc or ~/.bashrc:
+#   source /path/to/Final-Project-RPi/Website/mac_aliases.txt
+
 # Color Definitions for better logging
 CYAN='\033[0;36m'
 YELLOW='\033[1;33m'

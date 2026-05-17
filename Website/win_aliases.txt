@@ -2,6 +2,16 @@
 # FINAL PROJECT ALIASES - WAKEUP MONITORING SYSTEM
 # ==========================================================
 
+# PREREQUISITES (run once before using these aliases):
+#   1. Install Heroku CLI:  winget install Heroku.HerokuCLI
+#   2. Login to Heroku:     heroku login
+#      (If MFA is enabled, generate an API token at dashboard.heroku.com/account/applications
+#       and run: $env:HEROKU_API_KEY = "<your_token>")
+#   3. Add Heroku remote:   heroku git:remote -a wakeup
+#
+# To load these aliases, add to your PowerShell profile ($PROFILE):
+#   . C:\path\to\Final-Project-RPi\Website\win_aliases.txt
+
 # 1. DEPLOYMENT ALIAS
 # Description: Deploys only the website subdirectory to Heroku main branch.
 # Usage: Type 'deploy' to update the live dashboard.
