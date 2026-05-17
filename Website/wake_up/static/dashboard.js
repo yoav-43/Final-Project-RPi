@@ -24,7 +24,7 @@ async function initDashboard() {
     makeChart('perclosChart', 'PERCLOS Score (%)',   data.map(d => d.perclos), '#4ecca3', THRESHOLDS.perclos);
     makeChart('earChart',     'Eye Aspect Ratio',    data.map(d => d.ear),     '#fca311', THRESHOLDS.ear);
     makeChart('yawChart',     'Head Yaw (°)',        data.map(d => d.yaw),     '#36a2eb', THRESHOLDS.yaw);
-    makeChart('pitchChart',   'Head Pitch (°)',      data.map(d => d.pitch),   '#ff6384', THRESHOLDS.pitch);
+    makeChart('pitchChart',   'Head Pitch (°)',      data.map(d => d.pitch),   '#39ff14', THRESHOLDS.pitch);
 
     data.forEach(d => {
         if (d.distracted || d.perclos > 25) {
