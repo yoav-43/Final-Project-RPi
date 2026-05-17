@@ -14,17 +14,17 @@ async function initDashboard() {
             datasets: [
                 { label, data: dataset, borderColor: color, tension: 0.2, fill: false, pointRadius: 0 },
                 { label: 'Threshold', data: thresholdLine(threshold, labels.length),
-                  borderColor: '#e94560', borderDash: [6, 3], borderWidth: 1.5,
+                  borderColor: '#ff0000', borderDash: [6, 3], borderWidth: 1.5,
                   pointRadius: 0, fill: false }
             ]
         },
         options: { responsive: true, scales: { y: { beginAtZero: false, grid: { color: '#27293d' } } } }
     });
 
-    makeChart('perclosChart', 'PERCLOS Score (%)',   data.map(d => d.perclos), '#4ecca3', THRESHOLDS.perclos);
-    makeChart('earChart',     'Eye Aspect Ratio',    data.map(d => d.ear),     '#fca311', THRESHOLDS.ear);
-    makeChart('yawChart',     'Head Yaw (°)',        data.map(d => d.yaw),     '#36a2eb', THRESHOLDS.yaw);
-    makeChart('pitchChart',   'Head Pitch (°)',      data.map(d => d.pitch),   '#39ff14', THRESHOLDS.pitch);
+    makeChart('perclosChart', 'PERCLOS Score (%)',   data.map(d => d.perclos), '#5ba4a4', THRESHOLDS.perclos);
+    makeChart('earChart',     'Eye Aspect Ratio',    data.map(d => d.ear),     '#e8a838', THRESHOLDS.ear);
+    makeChart('yawChart',     'Head Yaw (°)',        data.map(d => d.yaw),     '#7eb8d4', THRESHOLDS.yaw);
+    makeChart('pitchChart',   'Head Pitch (°)',      data.map(d => d.pitch),   '#a8c97f', THRESHOLDS.pitch);
 
     data.forEach(d => {
         if (d.distracted || d.perclos > 25) {
