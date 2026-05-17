@@ -40,7 +40,15 @@
         <tbody id="alertLogBody"></tbody>
     </table>
 
-    <script> const DRIVE_ID = {{ drive.id }}; </script>
+    <script>
+        const DRIVE_ID = {{ drive.id }};
+        const THRESHOLDS = {
+            perclos: {{ thresholds.perclos_fatigue_limit }},
+            ear:     {{ thresholds.ear }},
+            yaw:     {{ thresholds.head_yaw }},
+            pitch:   {{ thresholds.head_pitch }}
+        };
+    </script>
     <script src="{{ url_for('static', filename='dashboard.js') }}"></script>
 </body>
 </html>

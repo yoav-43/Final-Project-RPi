@@ -174,7 +174,13 @@ def drive_dashboard(drive_id):
         "end": drive[3].strftime("%H:%M:%S") if drive[3] else "Active",
         "alerts": drive[4], "video": drive[5]
     }
-    return render_template('drive.html', drive=d_view)
+    thresholds = {
+        "perclos_fatigue_limit": 25,
+        "ear": 0.25,
+        "head_yaw": 22,
+        "head_pitch": -15
+    }
+    return render_template('drive.html', drive=d_view, thresholds=thresholds)
 
 if __name__ == '__main__':
     app.run(debug=True)
