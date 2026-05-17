@@ -61,7 +61,7 @@ async function initDashboard() {
             data: {
                 labels,
                 datasets: [
-                    { label: 'Head Yaw (°)', data: rawValues, borderColor: color, tension: 0, fill: false, pointRadius: 3, pointHoverRadius: 6 },
+                    { label: 'Head Yaw (°) — near 0 is better ✅ | outside thresholds = DISTRACTED ⚠️', data: rawValues, borderColor: color, tension: 0, fill: false, pointRadius: 3, pointHoverRadius: 6 },
                     { label: `+${threshold}° threshold`, data: thresholdLine(threshold, labels.length),
                       borderColor: '#ff0000', borderDash: [6, 3], borderWidth: 1.5, pointRadius: 0, hitRadius: 0, fill: false },
                     { label: `-${threshold}° threshold`, data: thresholdLine(-threshold, labels.length),
@@ -78,10 +78,10 @@ async function initDashboard() {
         });
     };
 
-    makeChart('perclosChart', 'PERCLOS Score (%)', data.map(d => d.perclos), '#5ba4a4', THRESHOLDS.perclos, `> ${THRESHOLDS.perclos}%`,  'PERCLOS (%)');
-    makeChart('earChart',     'Eye Aspect Ratio',  data.map(d => d.ear),     '#e8a838', THRESHOLDS.ear,     `< ${THRESHOLDS.ear}`,       'EAR');
+    makeChart('perclosChart', 'PERCLOS Score (%) — lower is better ✅ | above threshold = FATIGUE ⚠️', data.map(d => d.perclos), '#5ba4a4', THRESHOLDS.perclos, `> ${THRESHOLDS.perclos}% = Fatigue`,  'PERCLOS (%)');
+    makeChart('earChart',     'Eye Aspect Ratio — higher is better ✅ | below threshold = EYES CLOSED ⚠️',  data.map(d => d.ear),     '#e8a838', THRESHOLDS.ear,     `< ${THRESHOLDS.ear} = Eyes Closed`,  'EAR');
     makeYawChart('yawChart', data.map(d => d.yaw), '#7eb8d4', THRESHOLDS.yaw);
-    makeChart('pitchChart',   'Head Pitch (°)',    data.map(d => d.pitch),   '#a8c97f', THRESHOLDS.pitch,   `< ${THRESHOLDS.pitch}°`,    'Pitch (°)');
+    makeChart('pitchChart',   'Head Pitch (°) — near 0 is better ✅ | below threshold = HEAD DOWN ⚠️',    data.map(d => d.pitch),   '#a8c97f', THRESHOLDS.pitch,   `< ${THRESHOLDS.pitch}° = Head Down`, 'Pitch (°)');
 
     data.forEach(d => {
         if (d.distracted || d.perclos > 25) {
