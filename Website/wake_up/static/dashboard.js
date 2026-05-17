@@ -30,7 +30,7 @@ async function initDashboard() {
 
     const thresholdLine = (value, n) => Array(n).fill(value);
 
-    const makeChart = (ctx, label, rawValues, color, threshold) => {
+    const makeChart = (ctx, label, rawValues, color, threshold, condition) => {
         const { labels, values } = withCrossings(data.map(d => d.time), rawValues, threshold);
         return new Chart(document.getElementById(ctx), {
             type: 'line',
@@ -38,7 +38,7 @@ async function initDashboard() {
                 labels,
                 datasets: [
                     { label, data: values, borderColor: color, tension: 0, fill: false, pointRadius: 3, pointHoverRadius: 6 },
-                    { label: 'Threshold', data: thresholdLine(threshold, labels.length),
+                    { label: `Threshold (${condition})`, data: thresholdLine(threshold, labels.length),
                       borderColor: '#ff0000', borderDash: [6, 3], borderWidth: 1.5,
                       pointRadius: 0, hitRadius: 0, fill: false }
                 ]
@@ -50,10 +50,10 @@ async function initDashboard() {
         });
     };
 
-    makeChart('perclosChart', 'PERCLOS Score (%)', data.map(d => d.perclos), '#5ba4a4', THRESHOLDS.perclos);
-    makeChart('earChart',     'Eye Aspect Ratio',  data.map(d => d.ear),     '#e8a838', THRESHOLDS.ear);
-    makeChart('yawChart',     'Head Yaw (°)',      data.map(d => d.yaw),     '#7eb8d4', THRESHOLDS.yaw);
-    makeChart('pitchChart',   'Head Pitch (°)',    data.map(d => d.pitch),   '#a8c97f', THRESHOLDS.pitch);
+    makeChart('perclosChart', 'PERCLOS Score (%)', data.map(d => d.perclos), '#5ba4a4', THRESHOLDS.perclos, `> ${THRESHOLDS.perclos}%`);
+    makeChart('earChart',     'Eye Aspect Ratio',  data.map(d => d.ear),     '#e8a838', THRESHOLDS.ear,     `< ${THRESHOLDS.ear}`);
+    makeChart('yawChart',     'Head Yaw (°)',      data.map(d => d.yaw),     '#7eb8d4', THRESHOLDS.yaw,     `> ±${THRESHOLDS.yaw}°`);
+    makeChart('pitchChart',   'Head Pitch (°)',    data.map(d => d.pitch),   '#a8c97f', THRESHOLDS.pitch,   `< ${THRESHOLDS.pitch}°`);
 
     data.forEach(d => {
         if (d.distracted || d.perclos > 25) {
