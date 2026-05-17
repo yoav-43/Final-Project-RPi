@@ -95,10 +95,10 @@ def receive_telemetry():
         
         # Insert the granular telemetry record for chart rendering.
         cur.execute("""
-            INSERT INTO drive_logs (drive_id, ear_value, perclos_score, is_distracted, head_yaw, head_pitch) 
-            VALUES (%s, %s, %s, %s, %s, %s)
+            INSERT INTO drive_logs (drive_id, ear_value, perclos_score, is_distracted, head_yaw, head_pitch, latitude, longitude) 
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
         """, (drive_id, data.get('ear'), data.get('perclos'), data.get('is_distracted'), 
-              data.get('head_yaw'), data.get('head_pitch')))
+              data.get('head_yaw'), data.get('head_pitch'), data.get('latitude'), data.get('longitude')))
         
         # Update the session heartbeat so end_time reflects the last known activity.
         cur.execute("UPDATE drives SET end_time = CURRENT_TIMESTAMP WHERE id = %s", (drive_id,))
@@ -134,6 +134,20 @@ def get_drive_history(drive_id):
         "time": r[0].strftime("%H:%M:%S"),
         "ear": r[1], "perclos": r[2], "yaw": r[3], "pitch": r[4], "distracted": r[5]
     } for r in rows])
+
+@app.route('/api/gps/<int:drive_id>')
+def get_drive_gps(drive_id):
+    """Returns ordered GPS coordinates for a drive session, skipping (0,0) points."""
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT latitude, longitude FROM drive_logs
+        WHERE drive_id = %s AND latitude != 0 AND longitude != 0
+        ORDER BY timestamp ASC
+    """, (drive_id,))
+    rows = cur.fetchall()
+    cur.close(); conn.close()
+    return jsonify([{"lat": r[0], "lon": r[1]} for r in rows])
 
 # =============================================================================
 # Web Dashboards

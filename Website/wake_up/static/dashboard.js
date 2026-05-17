@@ -64,6 +64,24 @@ async function initDashboard() {
             tableBody.innerHTML += `<tr class="alert-row"><td>${d.time}</td><td>${type}</td><td>CRITICAL</td></tr>`;
         }
     });
+
+    // Load GPS route
+    const gpsRes = await fetch(`/api/gps/${DRIVE_ID}`);
+    const gps = await gpsRes.json();
+    const map = L.map('map');
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+    if (gps.length > 0) {
+        const coords = gps.map(p => [p.lat, p.lon]);
+        L.polyline(coords, { color: '#5ba4a4', weight: 3 }).addTo(map);
+        L.marker(coords[0]).bindPopup('Start').addTo(map);
+        L.marker(coords[coords.length - 1]).bindPopup('End').addTo(map);
+        map.fitBounds(coords);
+    } else {
+        map.setView([0, 0], 2);
+        L.popup().setLatLng([0, 0]).setContent('No GPS data for this session.').openOn(map);
+    }
 }
 
 window.onload = initDashboard;

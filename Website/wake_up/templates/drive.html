@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <title>Drive Analytics #{{ drive.id }}</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
         body { background: #1a1a2e; color: #fff; font-family: sans-serif; padding: 20px; }
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
@@ -32,6 +34,11 @@
         <div class="chart-card"><canvas id="earChart"></canvas></div>
         <div class="chart-card"><canvas id="yawChart"></canvas></div>
         <div class="chart-card"><canvas id="pitchChart"></canvas></div>
+
+        <div class="chart-card" style="grid-column: span 2;">
+            <h3>Drive Route</h3>
+            <div id="map" style="height: 400px; border-radius: 8px;"></div>
+        </div>
     </div>
 
     <h3>Detailed Alert Logs</h3>

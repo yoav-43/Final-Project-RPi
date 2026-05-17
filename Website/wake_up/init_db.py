@@ -45,7 +45,9 @@ def init():
             perclos_score FLOAT,
             is_distracted BOOLEAN,
             head_yaw FLOAT,
-            head_pitch FLOAT
+            head_pitch FLOAT,
+            latitude FLOAT,
+            longitude FLOAT
         );
     """)
 
