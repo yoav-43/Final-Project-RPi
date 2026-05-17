@@ -12,7 +12,7 @@ async function initDashboard() {
         data: {
             labels,
             datasets: [
-                { label, data: dataset, borderColor: color, tension: 0.2, fill: false, pointRadius: 0, hitRadius: 10 },
+                { label, data: dataset, borderColor: color, tension: 0.2, fill: false, pointRadius: 3, pointHoverRadius: 6, hitRadius: 10 },
                 { label: 'Threshold', data: thresholdLine(threshold, labels.length),
                   borderColor: '#ff0000', borderDash: [6, 3], borderWidth: 1.5,
                   pointRadius: 0, hitRadius: 0, fill: false }
