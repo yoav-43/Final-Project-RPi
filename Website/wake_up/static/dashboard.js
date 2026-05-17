@@ -37,7 +37,7 @@ async function initDashboard() {
             data: {
                 labels,
                 datasets: [
-                    { label, data: values, borderColor: color, tension: 0, fill: false, pointRadius: 3, pointHoverRadius: 6, hitRadius: 10 },
+                    { label, data: values, borderColor: color, tension: 0, fill: false, pointRadius: 3, pointHoverRadius: 6 },
                     { label: 'Threshold', data: thresholdLine(threshold, labels.length),
                       borderColor: '#ff0000', borderDash: [6, 3], borderWidth: 1.5,
                       pointRadius: 0, hitRadius: 0, fill: false }
@@ -45,7 +45,6 @@ async function initDashboard() {
             },
             options: {
                 responsive: true,
-                interaction: { mode: 'index', intersect: false },
                 scales: { y: { beginAtZero: false, grid: { color: '#27293d' } } }
             }
         });
