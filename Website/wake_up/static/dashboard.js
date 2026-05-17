@@ -18,7 +18,11 @@ async function initDashboard() {
                   pointRadius: 0, hitRadius: 0, fill: false }
             ]
         },
-        options: { responsive: true, scales: { y: { beginAtZero: false, grid: { color: '#27293d' } } } }
+        options: {
+            responsive: true,
+            interaction: { mode: 'index', intersect: false },
+            scales: { y: { beginAtZero: false, grid: { color: '#27293d' } } }
+        }
     });
 
     makeChart('perclosChart', 'PERCLOS Score (%)',   data.map(d => d.perclos), '#5ba4a4', THRESHOLDS.perclos);
