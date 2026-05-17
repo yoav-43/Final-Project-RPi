@@ -30,7 +30,7 @@ async function initDashboard() {
 
     const thresholdLine = (value, n) => Array(n).fill(value);
 
-    const makeChart = (ctx, label, rawValues, color, threshold, condition) => {
+    const makeChart = (ctx, label, rawValues, color, threshold, condition, yLabel) => {
         const { labels, values } = withCrossings(data.map(d => d.time), rawValues, threshold);
         return new Chart(document.getElementById(ctx), {
             type: 'line',
@@ -45,15 +45,18 @@ async function initDashboard() {
             },
             options: {
                 responsive: true,
-                scales: { y: { beginAtZero: false, grid: { color: '#27293d' } } }
+                scales: {
+                    x: { title: { display: true, text: 'Time', color: '#aaa' }, grid: { color: '#27293d' }, ticks: { color: '#aaa' } },
+                    y: { title: { display: true, text: yLabel, color: '#aaa' }, beginAtZero: false, grid: { color: '#27293d' }, ticks: { color: '#aaa' } }
+                }
             }
         });
     };
 
-    makeChart('perclosChart', 'PERCLOS Score (%)', data.map(d => d.perclos), '#5ba4a4', THRESHOLDS.perclos, `> ${THRESHOLDS.perclos}%`);
-    makeChart('earChart',     'Eye Aspect Ratio',  data.map(d => d.ear),     '#e8a838', THRESHOLDS.ear,     `< ${THRESHOLDS.ear}`);
-    makeChart('yawChart',     'Head Yaw (°)',      data.map(d => d.yaw),     '#7eb8d4', THRESHOLDS.yaw,     `> ±${THRESHOLDS.yaw}°`);
-    makeChart('pitchChart',   'Head Pitch (°)',    data.map(d => d.pitch),   '#a8c97f', THRESHOLDS.pitch,   `< ${THRESHOLDS.pitch}°`);
+    makeChart('perclosChart', 'PERCLOS Score (%)', data.map(d => d.perclos), '#5ba4a4', THRESHOLDS.perclos, `> ${THRESHOLDS.perclos}%`,  'PERCLOS (%)');
+    makeChart('earChart',     'Eye Aspect Ratio',  data.map(d => d.ear),     '#e8a838', THRESHOLDS.ear,     `< ${THRESHOLDS.ear}`,       'EAR');
+    makeChart('yawChart',     'Head Yaw (°)',      data.map(d => d.yaw),     '#7eb8d4', THRESHOLDS.yaw,     `> ±${THRESHOLDS.yaw}°`,     'Yaw (°)');
+    makeChart('pitchChart',   'Head Pitch (°)',    data.map(d => d.pitch),   '#a8c97f', THRESHOLDS.pitch,   `< ${THRESHOLDS.pitch}°`,    'Pitch (°)');
 
     data.forEach(d => {
         if (d.distracted || d.perclos > 25) {
