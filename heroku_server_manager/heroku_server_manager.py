@@ -25,23 +25,23 @@ class HerokuClient:
         self.current_drive_id = None
         self.logger = SystemLogger("HerokuClient")
 
-    def start_drive(self):
+    def start_drive(self, retries=3):
         """
         Registers a new drive session on the server and stores the
         returned drive ID for use in subsequent telemetry calls.
-
-        Returns:
-            int | None: The server-assigned drive ID, or None on failure.
+        Retries up to `retries` times to handle cold Heroku dyno starts.
         """
-        try:
-            payload = {"device_id": self.device_id}
-            response = requests.post(f"{self.base_url}/start_drive", json=payload, timeout=5)
-            if response.status_code in [200, 201]:
-                self.current_drive_id = response.json().get("drive_id")
-                self.logger.log("INFO", f"Drive started. ID: {self.current_drive_id}")
-                return self.current_drive_id
-        except Exception as e:
-            self.logger.log("ERROR", f"Failed to start drive: {e}")
+        for attempt in range(1, retries + 1):
+            try:
+                payload = {"device_id": self.device_id}
+                response = requests.post(f"{self.base_url}/start_drive", json=payload, timeout=15)
+                if response.status_code in [200, 201]:
+                    self.current_drive_id = response.json().get("drive_id")
+                    self.logger.log("INFO", f"Drive started. ID: {self.current_drive_id}")
+                    return self.current_drive_id
+            except Exception as e:
+                self.logger.log("WARNING", f"start_drive attempt {attempt}/{retries} failed: {e}")
+        self.logger.log("ERROR", "Failed to start drive after all retries. Running offline.")
         return None
 
     def send_telemetry(self, ear, perclos, is_distracted, yaw, pitch, lat=0, lon=0):
@@ -99,7 +99,7 @@ class HerokuClient:
             "video_url": video_url
         }
         try:
-            requests.post(f"{self.base_url}/end_drive", json=payload, timeout=10)
+            requests.post(f"{self.base_url}/end_drive", json=payload, timeout=30)
             self.logger.log("INFO", "Drive ended successfully on server.")
         except Exception as e:
             self.logger.log("ERROR", f"Failed to end drive: {e}")

@@ -5,6 +5,7 @@ import json
 import cv2
 import dlib
 import atexit
+from collections import deque
 from imutils import face_utils
 from dotenv import load_dotenv
 
@@ -47,7 +48,7 @@ class DriverMonitor:
             sys.exit(1)
 
         # Initialize the logger for this module.
-        self.logger = SystemLogger("MainMonitor")
+        self.logger = SystemLogger("MainMonitor", log_file="latest.log")
         
         # Instantiate all subsystem modules.
         self.buzzer = BuzzerController(port=self.config['arduino_port'])
@@ -65,9 +66,15 @@ class DriverMonitor:
         # State variables for the detection loop.
         self.video_out = None
         self.video_path = None
-        self.eye_closed_frames = 0
-        self.total_frames_in_minute = 0
+        # Sliding window for PERCLOS: stores 1 (closed) or 0 (open) per frame.
+        # 30 frames ≈ 3 seconds at 10 fps — adjust via config if needed.
+        perclos_window = self.config.get('perclos_window_frames', 30)
+        self.eye_state_window = deque(maxlen=perclos_window)
+        self.last_buzzer_state = None  # Track last sent command to avoid re-triggering mid-beep
         self.running = False
+        self._fps = 0.0
+        self._fps_frame_count = 0
+        self._fps_last_time = None
 
     def run(self):
         """Starts all subsystems and enters the main frame-processing loop."""
@@ -99,6 +106,7 @@ class DriverMonitor:
         (rS, rE) = face_utils.FACIAL_LANDMARKS_IDXS["right_eye"]
         
         last_telemetry_time = time.time()
+        self._fps_last_time = time.time()
         self.running = True
 
         self.logger.log("INFO", "System Live. Waiting for driver...")
@@ -111,43 +119,53 @@ class DriverMonitor:
                 # Resize to a fixed resolution required by the VideoWriter.
                 frame = cv2.resize(frame, (640, 480))
                 gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+                # FPS — measured every frame regardless of detection.
+                self._fps_frame_count += 1
+                now = time.time()
+                elapsed = now - self._fps_last_time
+                if elapsed >= 1.0:
+                    self._fps = self._fps_frame_count / elapsed
+                    self._fps_frame_count = 0
+                    self._fps_last_time = now
                 
                 # Run the dlib HOG face detector on the grayscale frame.
                 rects = self.img_proc.detector(gray, 0)
 
-                # Default state: no face detected is treated as distraction.
-                is_distracted = len(rects) == 0
+                # Default state: no face detected → silence buzzer and skip.
+                is_distracted = False
+                if len(rects) == 0:
+                    self.buzzer.status_ok()
+                    self.img_proc.draw_stats_overlay(frame, 0.0, 0.0, 0.0, 0.0, self._fps, self.config['thresholds'])
+                    self.video_out.write(frame)
+                    continue
                 is_fatigued = False
                 ear, yaw, pitch = 0.0, 0.0, 0.0
-                self.total_frames_in_minute += 1
 
                 # --- Computer Vision Processing ---
-                if not is_distracted:
-                    # Extract the 68 facial landmark coordinates.
-                    shape = face_utils.shape_to_np(self.img_proc.predictor(gray, rects[0]))
-                    
-                    # Compute EAR for each eye and average them.
-                    leftEAR = self.img_proc.calculate_ear(shape[lS:lE])
-                    rightEAR = self.img_proc.calculate_ear(shape[rS:rE])
-                    ear = (leftEAR + rightEAR) / 2.0
+                # Extract the 68 facial landmark coordinates.
+                shape = face_utils.shape_to_np(self.img_proc.predictor(gray, rects[0]))
+                
+                # Compute EAR for each eye and average them.
+                leftEAR = self.img_proc.calculate_ear(shape[lS:lE])
+                rightEAR = self.img_proc.calculate_ear(shape[rS:rE])
+                ear = (leftEAR + rightEAR) / 2.0
 
-                    # Estimate head orientation from the landmark geometry.
-                    yaw, pitch = self.img_proc.get_head_pose(shape, 480, 640)
+                # Estimate head orientation from the landmark geometry.
+                yaw, pitch = self.img_proc.get_head_pose(shape, 480, 640)
 
-                    thresh = self.config['thresholds']
-                    
-                    # Increment the closed-eye frame counter for PERCLOS calculation.
-                    if ear < thresh['ear']:
-                        self.eye_closed_frames += 1
-                    
-                    # PERCLOS: percentage of frames with closed eyes in the current window.
-                    perclos = (self.eye_closed_frames / self.total_frames_in_minute) * 100
-                    if perclos > thresh['perclos_fatigue_limit']:
-                        is_fatigued = True
+                thresh = self.config['thresholds']
+                
+                # Sliding-window PERCLOS: push 1 (closed) or 0 (open) each frame.
+                # The deque automatically drops frames older than perclos_window_frames.
+                self.eye_state_window.append(1 if ear < thresh['ear'] else 0)
+                perclos = (sum(self.eye_state_window) / len(self.eye_state_window)) * 100
+                if perclos > thresh['perclos_fatigue_limit']:
+                    is_fatigued = True
 
-                    # Distraction is flagged when head rotation exceeds either threshold.
-                    if abs(yaw) > thresh['head_yaw'] or pitch < thresh['head_pitch']:
-                        is_distracted = True
+                # Distraction is flagged when head rotation exceeds either threshold.
+                if abs(yaw) > thresh['head_yaw'] or pitch < thresh['head_pitch']:
+                    is_distracted = True
 
                 # --- Driver Feedback ---
                 box_color = (0, 255, 0)
@@ -166,18 +184,31 @@ class DriverMonitor:
                 for rect in rects:
                     self.img_proc.draw_feedback(frame, rect, box_color, box_label)
 
+                self.img_proc.draw_stats_overlay(frame, ear, perclos, yaw, pitch, self._fps, self.config['thresholds'])
                 self.video_out.write(frame)
+                if os.environ.get('DISPLAY'):
+                    cv2.imshow("WakeUp Monitor", frame)
+                    if cv2.waitKey(1) & 0xFF == ord('q'):
+                        break
 
                 # --- Telemetry Transmission (1 Hz) ---
                 if time.time() - last_telemetry_time > 1.0:
-                    perclos = (self.eye_closed_frames / self.total_frames_in_minute) * 100
+                    perclos = (sum(self.eye_state_window) / len(self.eye_state_window)) * 100 if self.eye_state_window else 0.0
                     lat, lon = self.gps.get_location()
                     
                     self.backend.send_telemetry(ear, perclos, is_distracted, yaw, pitch, lat, lon)
                     
                     # Log level reflects the current driver state for easy monitoring.
                     log_lvl = "ERROR" if is_fatigued else ("WARNING" if is_distracted else "DEBUG")
-                    self.logger.log(log_lvl, f"EAR:{ear:.2f} | PERCLOS:{perclos:.1f}% | Yaw:{yaw:.1f}")
+                    R, G, E = "\033[91m", "\033[92m", "\033[0m"
+                    t = self.config['thresholds']
+                    msg = (
+                        f"EAR:{(G if ear >= t['ear'] else R)}{ear:.2f}{E} | "
+                        f"PERCLOS:{(G if perclos <= t['perclos_fatigue_limit'] else R)}{perclos:.1f}%{E} | "
+                        f"Yaw:{(G if abs(yaw) <= t['head_yaw'] else R)}{yaw:.1f}{E} | "
+                        f"Pitch:{(G if pitch >= t['head_pitch'] else R)}{pitch:.1f}{E}"
+                    )
+                    self.logger.log_raw(log_lvl, msg)
                     
                     last_telemetry_time = time.time()
 
@@ -193,12 +224,15 @@ class DriverMonitor:
         
         # Release the camera capture device.
         self.img_proc.release_camera()
+        if os.environ.get('DISPLAY'):
+            cv2.destroyAllWindows()
         
         if self.video_out: 
             self.video_out.release()
             self.logger.log("INFO", "Video saved locally.")
 
         self.gps.stop()
+        self.buzzer.status_ok()
         self.buzzer.close()
 
         # Upload the recorded session video to Cloudinary and retrieve the CDN URL.

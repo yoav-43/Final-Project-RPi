@@ -22,21 +22,26 @@ This is the top-level orchestrator of the WakeUp system. Run `monitor.py` to sta
 `DriverMonitor.run()` is the main loop:
 
 - Opens the camera via `ImageProcessor`.
-- Calls `HerokuClient.start_drive()` to register the session on the server.
+- Calls `HerokuClient.start_drive()` to register the session on the server (retries up to 3 times with a 15s timeout to handle cold Heroku dyno starts).
 - Creates a `cv2.VideoWriter` using the **MJPG + .avi** codec (crash-safe: frames are flushed to disk immediately).
 - On every frame:
-  - Detects faces with dlib.
+  - Computes **FPS** (updated every second, independent of face detection).
+  - Detects faces with dlib's frontal HOG detector.
+  - If no face: silences buzzer, draws stats overlay, continues.
   - Calculates **EAR** (Eye Aspect Ratio) for drowsiness.
-  - Calculates **PERCLOS** (% of frames with eyes closed in the current window) for fatigue.
+  - Calculates **PERCLOS** using a **sliding window** of the last `perclos_window_frames` frames (~1.5 seconds at 10fps) for fatigue detection.
   - Estimates **head yaw/pitch** via `solvePnP` for distraction.
   - Sends the appropriate command to the buzzer (`F` / `D` / `O`).
+  - Draws a live stats overlay (EAR, PERCLOS, Yaw, Pitch, FPS) on the frame — green = OK, red = violation.
   - Writes the annotated frame to the video file.
-- Every 1 second: sends a telemetry payload (EAR, PERCLOS, yaw, pitch, GPS) to the backend.
+  - Shows a live window if `DISPLAY` is set (headless-safe).
+- Every 1 second: sends a telemetry payload (EAR, PERCLOS, yaw, pitch, GPS) to the backend in a background thread.
 - On `KeyboardInterrupt` or loop exit: calls `cleanup()`.
 
 `DriverMonitor.cleanup()`:
 
 - Releases the camera and video writer.
+- Closes the display window (if open).
 - Stops GPS and closes the serial port.
 - Uploads the `.avi` file to Cloudinary.
 - Calls `HerokuClient.end_drive()` with the resulting video URL.
@@ -50,10 +55,11 @@ This is the top-level orchestrator of the WakeUp system. Run `monitor.py` to sta
     "video_temp_file": "drive_video.mp4",
     "thresholds": {
         "ear": 0.25,
-        "head_yaw": 22,
+        "head_yaw": 45,
         "head_pitch": -15,
         "perclos_fatigue_limit": 25
     },
+    "perclos_window_frames": 15,
     "arduino_port": "/dev/ttyACM0",
     "gps_port": "/dev/ttyAMA0"
 }
@@ -65,13 +71,12 @@ This is the top-level orchestrator of the WakeUp system. Run `monitor.py` to sta
 | `predictor_path` | Path to the dlib 68-landmark `.dat` model file (relative to project root). |
 | `video_temp_file` | Base name for the local video file. Extension is forced to `.avi` at runtime. |
 | `thresholds.ear` | EAR value below which an eye is considered closed (default: `0.25`). |
-| `thresholds.head_yaw` | Absolute yaw angle (degrees) above which the driver is considered distracted (default: `22`). |
+| `thresholds.head_yaw` | Absolute yaw angle (degrees) above which the driver is considered distracted (default: `45`). |
 | `thresholds.head_pitch` | Pitch angle below which the driver is considered distracted (default: `-15`). |
 | `thresholds.perclos_fatigue_limit` | PERCLOS percentage above which fatigue is declared (default: `25%`). |
+| `perclos_window_frames` | Number of frames in the PERCLOS sliding window (default: `15` ≈ 1.5 seconds at 10fps). |
 | `arduino_port` | Serial port for the Arduino buzzer (Linux: `/dev/ttyACM0`). |
 | `gps_port` | Serial port for the GPS module (Linux: `/dev/ttyAMA0`). |
-
-The `cloudinary` and `base_url` keys in the file contain `"ENV_VAR"` as a placeholder. They are overwritten at runtime from the `.env` file and are never committed to version control.
 
 ## Running
 
@@ -81,11 +86,17 @@ From the **project root**:
 python3 monitor/monitor.py
 ```
 
+Or use the shell alias (after sourcing `Website/mac_aliases.txt`):
+
+```bash
+start_drive
+```
+
 The working directory must be the project root so that `config.json` and `shape_predictor_68_face_landmarks.dat` are found at their expected relative paths.
 
-## Dependencies
+All output is logged to the terminal and saved to `latest.log` in the project root. Each run overwrites the previous log.
 
-All dependencies are shared across the project. See the root-level setup instructions.
+## Dependencies
 
 ```
 opencv-python

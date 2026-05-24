@@ -145,6 +145,24 @@ class ImageProcessor:
         pitch, yaw, roll = [element.item() for element in euler_angles]
         return yaw, pitch
 
+    def draw_stats_overlay(self, frame, ear, perclos, yaw, pitch, fps, thresholds):
+        """
+        Renders a live stats legend in the top-left corner of the frame.
+        Each stat is colored green (OK) or red (violation).
+        """
+        stats = [
+            ("EAR",     f"{ear:.2f}",     ear >= thresholds['ear']),
+            ("PERCLOS", f"{perclos:.1f}%", perclos <= thresholds['perclos_fatigue_limit']),
+            ("Yaw",     f"{yaw:.1f}deg",  abs(yaw) <= thresholds['head_yaw']),
+            ("Pitch",   f"{pitch:.1f}deg", pitch >= thresholds['head_pitch']),
+            ("FPS",     f"{fps:.1f}",     True),
+        ]
+        for i, (name, value, ok) in enumerate(stats):
+            color = (0, 255, 0) if ok else (0, 0, 255)
+            cv2.putText(frame, f"{name}: {value}", (10, 25 + i * 25),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)
+        return frame
+
     def draw_feedback(self, frame, rect, color, label):
         """
         Renders a bounding box and status label over the detected face region.

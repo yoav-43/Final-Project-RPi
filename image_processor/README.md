@@ -79,6 +79,20 @@ Draws a colored bounding box and status label over the detected face rectangle. 
 | Fatigued | Red `(0,0,255)` | `FATIGUE!` |
 | Distracted | Yellow `(0,255,255)` | `DISTRACTED` |
 
+```python
+draw_stats_overlay(frame, ear, perclos, yaw, pitch, fps, thresholds) -> frame
+```
+
+Renders a live legend in the top-left corner of every frame (including frames with no face detected). Each stat value is colored **green** if within threshold or **red** if in violation:
+
+| Stat | Violation condition |
+|------|-------------------|
+| EAR | < `thresholds['ear']` |
+| PERCLOS | > `thresholds['perclos_fatigue_limit']` |
+| Yaw | `abs(yaw)` > `thresholds['head_yaw']` |
+| Pitch | < `thresholds['head_pitch']` |
+| FPS | always green (informational) |
+
 ## Standalone Test Mode
 
 Run directly to test the camera and algorithms without the full system:

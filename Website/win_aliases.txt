@@ -37,3 +37,10 @@ function backup {
     git commit -m "Full project backup and synchronization" 
     git push origin main 
 }
+
+# 4. START DRIVE ALIAS
+# Description: Runs the driver monitor and saves all output to latest.log.
+# Usage: Type 'start_drive' from the project root.
+function start_drive {
+    python3 monitor/monitor.py 2>&1 | Tee-Object -FilePath latest.log
+}

@@ -5,10 +5,11 @@
     "video_temp_file": "drive_video.mp4",
     "thresholds": {
         "ear": 0.25,
-        "head_yaw": 22,
+        "head_yaw": 45,
         "head_pitch": -15,
         "perclos_fatigue_limit": 25
     },
+    "perclos_window_frames": 15,
    "cloudinary": {
         "cloud_name": "ENV_VAR",
         "api_key": "ENV_VAR",

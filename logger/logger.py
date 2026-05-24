@@ -20,26 +20,32 @@ class SystemLogger:
         "END": "\033[0m"       # Reset to default
     }
 
-    def __init__(self, name="System"):
-        """
-        Args:
-            name (str): Display name of the module using this logger instance.
-        """
+    def __init__(self, name="System", log_file=None):
         self.name = name
+        self._file = open(log_file, "w") if log_file else None
 
     def log(self, level, message):
-        """
-        Prints a color-coded, timestamped log entry to stdout.
-
-        Output format: [LEVEL] [ModuleName] HH:MM:SS - message
-
-        Args:
-            level (str): Severity level — one of INFO, DEBUG, WARNING, ERROR.
-            message (str): The log message content.
-        """
+        """Prints a color-coded, timestamped log entry to stdout."""
         color = self.COLORS.get(level, self.COLORS["END"])
         timestamp = datetime.now().strftime('%H:%M:%S')
-        print(f"{color}[{level}] [{self.name}] {timestamp} - {message}{self.COLORS['END']}")
+        line = f"[{level}] [{self.name}] {timestamp} - {message}"
+        print(f"{color}{line}{self.COLORS['END']}")
+        if self._file:
+            self._file.write(line + "\n")
+            self._file.flush()
+
+    def log_raw(self, level, message):
+        """Like log(), but the message is printed as-is so callers can embed their own ANSI colors."""
+        color = self.COLORS.get(level, self.COLORS["END"])
+        timestamp = datetime.now().strftime('%H:%M:%S')
+        prefix = f"[{level}] [{self.name}] {timestamp} -"
+        print(f"{color}{prefix}{self.COLORS['END']} {message}")
+        if self._file:
+            # Strip ANSI codes for the file
+            import re
+            clean = re.sub(r'\033\[[0-9;]*m', '', message)
+            self._file.write(f"{prefix} {clean}\n")
+            self._file.flush()
 
 # --- Standalone Test ---
 if __name__ == "__main__":

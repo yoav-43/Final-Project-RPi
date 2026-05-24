@@ -57,7 +57,8 @@ class BuzzerController:
         self.send_command(b'O')
 
     def close(self):
-        """Closes the serial port and releases the connection resource."""
+        """Silences the buzzer then closes the serial port."""
+        self.status_ok()
         if self.arduino:
             self.arduino.close()
 
