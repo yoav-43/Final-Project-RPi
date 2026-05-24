@@ -191,7 +191,7 @@ def drive_dashboard(drive_id):
     thresholds = {
         "perclos_fatigue_limit": 25,
         "ear": 0.25,
-        "head_yaw": 22,
+        "head_yaw": 45,
         "head_pitch": -15
     }
     return render_template('drive.html', drive=d_view, thresholds=thresholds)
