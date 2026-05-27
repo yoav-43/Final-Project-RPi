@@ -1,5 +1,7 @@
 import sys
+import sys
 import os
+import signal
 import time
 import json
 import cv2
@@ -78,6 +80,9 @@ class DriverMonitor:
 
     def run(self):
         """Starts all subsystems and enters the main frame-processing loop."""
+        # Handle SIGTERM (sent by systemd on shutdown) the same as Ctrl+C.
+        signal.signal(signal.SIGTERM, lambda *_: (_ for _ in ()).throw(KeyboardInterrupt()))
+
         self.gps.start()
         
         # Open the camera; raise an error if the device is unavailable.
