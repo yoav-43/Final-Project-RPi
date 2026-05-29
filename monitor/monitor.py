@@ -154,6 +154,10 @@ class DriverMonitor:
                     self.buzzer.status_ok()
                     self.img_proc.draw_stats_overlay(frame, 0.0, 0.0, 0.0, 0.0, self._fps, self.config['thresholds'])
                     self.video_out.write(frame)
+                    if os.environ.get('DISPLAY'):
+                        cv2.imshow("WakeUp Monitor", frame)
+                        if cv2.waitKey(1) & 0xFF == ord('q'):
+                            break
                     continue
                 is_fatigued = False
                 ear, yaw, pitch = 0.0, 0.0, 0.0
