@@ -48,7 +48,7 @@ backup() {
 # Description: Runs the driver monitor and saves all output to latest.log.
 # Usage: Type 'start_drive' in terminal from the project root.
 start_drive() {
-    python3 monitor/monitor.py
+    python3 monitor/monitor.py "$@"
 }
 
 # ==========================================================

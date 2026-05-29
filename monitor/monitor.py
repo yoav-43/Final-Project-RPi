@@ -7,6 +7,7 @@ import json
 import cv2
 import dlib
 import atexit
+import argparse
 from datetime import datetime
 from collections import deque
 from imutils import face_utils
@@ -29,7 +30,8 @@ class DriverMonitor:
     video recording, and graceful shutdown sequence.
     """
 
-    def __init__(self, config_path='monitor/config.json'):
+    def __init__(self, config_path='monitor/config.json', live=False):
+        self.live = live
         # Load secret credentials from the .env file in the project root.
         load_dotenv()
 
@@ -154,7 +156,7 @@ class DriverMonitor:
                     self.buzzer.status_ok()
                     self.img_proc.draw_stats_overlay(frame, 0.0, 0.0, 0.0, 0.0, self._fps, self.config['thresholds'])
                     self.video_out.write(frame)
-                    if os.environ.get('DISPLAY'):
+                    if self.live:
                         cv2.imshow("WakeUp Monitor", frame)
                         if cv2.waitKey(1) & 0xFF == ord('q'):
                             break
@@ -210,7 +212,7 @@ class DriverMonitor:
 
                 self.img_proc.draw_stats_overlay(frame, ear, perclos, yaw, pitch, self._fps, self.config['thresholds'])
                 self.video_out.write(frame)
-                if os.environ.get('DISPLAY'):
+                if self.live:
                     cv2.imshow("WakeUp Monitor", frame)
                     if cv2.waitKey(1) & 0xFF == ord('q'):
                         break
@@ -248,7 +250,7 @@ class DriverMonitor:
         
         # Release the camera capture device.
         self.img_proc.release_camera()
-        if os.environ.get('DISPLAY'):
+        if self.live:
             cv2.destroyAllWindows()
         
         if self.video_out: 
@@ -272,5 +274,8 @@ if __name__ == "__main__":
     if not os.path.exists('monitor/config.json'):
         print("Error: monitor/config.json not found.")
     else:
-        app = DriverMonitor()
+        parser = argparse.ArgumentParser()
+        parser.add_argument('--live', action='store_true', help='Show live camera feed window')
+        args = parser.parse_args()
+        app = DriverMonitor(live=args.live)
         app.run()
