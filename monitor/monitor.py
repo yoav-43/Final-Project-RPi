@@ -84,6 +84,7 @@ class DriverMonitor:
         self._fps = 0.0
         self._fps_frame_count = 0
         self._fps_last_time = None
+        self._face_detected = True  # Track face state to log transitions
 
     def run(self):
         """Starts all subsystems and enters the main frame-processing loop."""
@@ -147,12 +148,19 @@ class DriverMonitor:
                 # Default state: no face detected → silence buzzer and skip.
                 is_distracted = False
                 if len(rects) == 0:
+                    if self._face_detected:
+                        self.logger.log("WARNING", "Face detection lost")
+                        self._face_detected = False
                     self.buzzer.status_ok()
                     self.img_proc.draw_stats_overlay(frame, 0.0, 0.0, 0.0, 0.0, self._fps, self.config['thresholds'])
                     self.video_out.write(frame)
                     continue
                 is_fatigued = False
                 ear, yaw, pitch = 0.0, 0.0, 0.0
+
+                if not self._face_detected:
+                    self.logger.log("INFO", "Face detection regained")
+                    self._face_detected = True
 
                 # --- Computer Vision Processing ---
                 # Extract the 68 facial landmark coordinates.
