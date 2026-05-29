@@ -186,7 +186,7 @@ class DriverMonitor:
                 # The deque automatically drops frames older than perclos_window_frames.
                 self.eye_state_window.append(1 if ear < thresh['ear'] else 0)
                 perclos = (sum(self.eye_state_window) / len(self.eye_state_window)) * 100
-                if perclos > thresh['perclos_fatigue_limit']:
+                if len(self.eye_state_window) == self.eye_state_window.maxlen and perclos > thresh['perclos_fatigue_limit']:
                     is_fatigued = True
 
                 # Distraction is flagged when head rotation exceeds either threshold.
