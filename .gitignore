@@ -65,3 +65,4 @@ slprj/
 *.avi
 *.mp4
 *.log
+logs/

@@ -7,6 +7,7 @@ import json
 import cv2
 import dlib
 import atexit
+from datetime import datetime
 from collections import deque
 from imutils import face_utils
 from dotenv import load_dotenv
@@ -50,7 +51,13 @@ class DriverMonitor:
             sys.exit(1)
 
         # Initialize the logger for this module.
-        self.logger = SystemLogger("MainMonitor", log_file="latest.log")
+        os.makedirs("logs", exist_ok=True)
+        log_filename = datetime.now().strftime("logs/drive_%Y-%m-%d_%H-%M-%S.log")
+        # Update the latest.log symlink to point to this drive's log file.
+        if os.path.islink("latest.log") or os.path.exists("latest.log"):
+            os.remove("latest.log")
+        os.symlink(log_filename, "latest.log")
+        self.logger = SystemLogger("MainMonitor", log_file=log_filename)
         
         # Instantiate all subsystem modules.
         self.buzzer = BuzzerController(port=self.config['arduino_port'])
