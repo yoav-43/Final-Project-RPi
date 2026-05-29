@@ -4,7 +4,7 @@
     "predictor_path": "shape_predictor_68_face_landmarks.dat",
     "video_temp_file": "drive_video.mp4",
     "thresholds": {
-        "ear": 0.25,
+        "ear": 0.15,
         "head_yaw": 45,
         "head_pitch": -15,
         "perclos_fatigue_limit": 25
