@@ -45,12 +45,16 @@ class BuzzerController:
                 self.logger.log("ERROR", f"Serial write failed: {e}")
 
     def alert_fatigue(self):
-        """Sends the fatigue alert command. Arduino responds with a continuous tone."""
+        """Sends the fatigue alert command. Arduino responds with fast beeping at 800 Hz."""
         self.send_command(b'F')
 
     def alert_distraction(self):
-        """Sends the distraction alert command. Arduino responds with a double beep."""
+        """Sends the distraction alert command. Arduino responds with continuous 1500 Hz tone."""
         self.send_command(b'D')
+
+    def alert_no_face(self):
+        """Sends the no-face alert command. Arduino responds with slow beeping at 2500 Hz."""
+        self.send_command(b'N')
 
     def status_ok(self):
         """Sends the all-clear command. Arduino silences the buzzer."""

@@ -153,7 +153,7 @@ class DriverMonitor:
                     if self._face_detected:
                         self.logger.log("WARNING", "Face detection lost")
                         self._face_detected = False
-                    self.buzzer.status_ok()
+                    self.buzzer.alert_no_face()
                     self.img_proc.draw_stats_overlay(frame, 0.0, 0.0, 0.0, 0.0, self._fps, self.config['thresholds'])
                     self.video_out.write(frame)
                     if self.live:
