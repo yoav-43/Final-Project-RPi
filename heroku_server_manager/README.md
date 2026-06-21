@@ -52,7 +52,7 @@ Called once per second from the main loop.
 
 `POST /api/end_drive` with `{"drive_id": ..., "video_url": ...}`.
 
-Called during `DriverMonitor.cleanup()` after the Cloudinary upload completes. The `video_url` is the Cloudinary CDN link to the session recording. Uses a 10-second timeout (longer than telemetry) to ensure the final record is written.
+Called during `DriverMonitor.cleanup()` after the Cloudinary upload completes. The `video_url` is the Cloudinary CDN link to the session recording. Uses a 30-second timeout (longer than telemetry) to ensure the final record is written.
 
 ### Error Handling
 

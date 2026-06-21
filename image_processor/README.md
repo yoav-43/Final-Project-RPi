@@ -61,7 +61,7 @@ Uses OpenCV's `solvePnP` to solve the Perspective-n-Point problem:
 2. Maps them to the corresponding 2D landmark indices from the 68-point shape (`shape[30]`, `shape[8]`, etc.).
 3. Builds a pinhole camera matrix using `focal_length = img_width` (approximation).
 4. Calls `cv2.solvePnP` → rotation vector → `cv2.Rodrigues` → rotation matrix → `cv2.decomposeProjectionMatrix` → Euler angles.
-5. Returns `(yaw, pitch)` in degrees. Yaw > ±22° or pitch < -15° triggers a distraction alert.
+5. Returns `(yaw, pitch)` in degrees. Yaw > ±45° or pitch < -15° triggers a distraction alert (thresholds are configurable in `monitor/config.json`).
 
 The camera matrix is computed once and cached in `self.camera_matrix`.
 

@@ -21,8 +21,9 @@ The Raspberry Pi sends a single ASCII byte every frame:
 
 | Byte | State | Arduino Response |
 |------|-------|-----------------|
-| `b'F'` | Fatigue detected | Continuous 1000 Hz tone |
-| `b'D'` | Distraction detected | Double beep at 1500 Hz (150 ms on, 200 ms gap, repeated) |
+| `b'F'` | Fatigue detected | Fast beeping at 800 Hz (100ms on / 100ms off) |
+| `b'D'` | Distraction detected | Continuous 1500 Hz tone |
+| `b'N'` | No face detected | Slow beeping at 2500 Hz (100ms on / 400ms off) |
 | `b'O'` | Driver OK | `noTone()` — silence |
 
 On startup, the Arduino plays a two-note melody (2000 Hz → 2500 Hz) to confirm the serial connection is live.
@@ -46,8 +47,9 @@ If the Arduino is not connected, the constructor logs an error and sets `self.ar
 
 | Method | Sends | Description |
 |--------|-------|-------------|
-| `alert_fatigue()` | `b'F'` | Triggers continuous high-priority alarm. |
-| `alert_distraction()` | `b'D'` | Triggers intermittent medium-priority alarm. |
+| `alert_fatigue()` | `b'F'` | Triggers fast beeping high-priority alarm. |
+| `alert_distraction()` | `b'D'` | Triggers continuous medium-priority alarm. |
+| `alert_no_face()` | `b'N'` | Triggers slow beeping alert when no face is detected. |
 | `status_ok()` | `b'O'` | Silences the buzzer. |
 | `close()` | — | Closes the serial port cleanly. |
 

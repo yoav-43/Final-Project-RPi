@@ -22,10 +22,10 @@ Camera → ImageProcessor → DriverMonitor → BuzzerController → Arduino →
 
 1. The camera captures frames at ~10 fps.
 2. **dlib** detects the face and extracts 68 facial landmarks.
-3. **EAR** (Eye Aspect Ratio) is computed each frame. If EAR < 0.25, the eye is counted as closed.
-4. **PERCLOS** (% of closed-eye frames in a **15-frame sliding window** ≈ 1.5 seconds) is tracked. Above 25% → fatigue.
+3. **EAR** (Eye Aspect Ratio) is computed each frame. If EAR < 0.18, the eye is counted as closed.
+4. **PERCLOS** (% of closed-eye frames in a **15-frame sliding window** ≈ 1.5 seconds) is tracked. Above 20% → fatigue.
 5. **Head pose** (yaw/pitch) is estimated via `cv2.solvePnP`. Yaw > ±45° or pitch < -15° → distraction.
-6. The Arduino buzzer is commanded every frame: continuous tone for fatigue, double beep for distraction, silence for OK.
+6. The Arduino buzzer is commanded every frame: fast beeping for fatigue, continuous tone for distraction, silence for OK.
 7. A **live stats overlay** (EAR, PERCLOS, Yaw, Pitch, FPS) is burned into every frame — green = OK, red = violation.
 8. Every second, a telemetry payload (EAR, PERCLOS, yaw, pitch, GPS) is sent to the Heroku backend in a background thread.
 9. On shutdown, the `.avi` recording is uploaded to Cloudinary and the session is finalized on the server.
@@ -158,10 +158,10 @@ Edit the non-secret settings to match your hardware:
     "arduino_port": "/dev/ttyACM0",
     "gps_port": "/dev/ttyAMA0",
     "thresholds": {
-        "ear": 0.25,
+        "ear": 0.18,
         "head_yaw": 45,
         "head_pitch": -15,
-        "perclos_fatigue_limit": 25
+        "perclos_fatigue_limit": 20
     },
     "perclos_window_frames": 15
 }
@@ -205,7 +205,7 @@ The working directory must be the project root so that `config.json` and the `.d
 [INFO] [HerokuClient] 10:00:06 - Drive started. ID: 42
 [INFO] [MainMonitor] 10:00:06 - Recording video to: drive_video.avi
 [INFO] [MainMonitor] 10:00:06 - System Live. Waiting for driver...
-[DEBUG] [MainMonitor] 10:00:07 - EAR:0.34 | PERCLOS:0.0% | Yaw:2.1 | Pitch:168.3
+[DEBUG] [MainMonitor] 10:00:07 - EAR:0.34 | PERCLOS:0.0% | Yaw:2.1 | Pitch:-5.2
 ```
 
 Press **Ctrl+C** to stop. The system will automatically upload the video and finalize the session.
@@ -216,8 +216,8 @@ Press **Ctrl+C** to stop. The system will automatically upload the video and fin
 
 | Metric | Threshold | Alert Triggered |
 |--------|-----------|-----------------|
-| EAR | < 0.25 | Eye counted as closed |
-| PERCLOS | > 25% | Fatigue alert (`b'F'` to buzzer) |
+| EAR | < 0.18 | Eye counted as closed |
+| PERCLOS | > 20% | Fatigue alert (`b'F'` to buzzer) |
 | Head Yaw | > ±45° | Distraction alert (`b'D'` to buzzer) |
 | Head Pitch | < -15° | Distraction alert (`b'D'` to buzzer) |
 

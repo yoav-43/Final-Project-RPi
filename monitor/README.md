@@ -54,10 +54,10 @@ This is the top-level orchestrator of the WakeUp system. Run `monitor.py` to sta
     "predictor_path": "shape_predictor_68_face_landmarks.dat",
     "video_temp_file": "drive_video.mp4",
     "thresholds": {
-        "ear": 0.25,
+        "ear": 0.18,
         "head_yaw": 45,
         "head_pitch": -15,
-        "perclos_fatigue_limit": 25
+        "perclos_fatigue_limit": 20
     },
     "perclos_window_frames": 15,
     "arduino_port": "/dev/ttyACM0",
@@ -70,10 +70,10 @@ This is the top-level orchestrator of the WakeUp system. Run `monitor.py` to sta
 | `device_id` | Identifier sent to the backend to tag this device's sessions. |
 | `predictor_path` | Path to the dlib 68-landmark `.dat` model file (relative to project root). |
 | `video_temp_file` | Base name for the local video file. Extension is forced to `.avi` at runtime. |
-| `thresholds.ear` | EAR value below which an eye is considered closed (default: `0.25`). |
+| `thresholds.ear` | EAR value below which an eye is considered closed (default: `0.18`). |
 | `thresholds.head_yaw` | Absolute yaw angle (degrees) above which the driver is considered distracted (default: `45`). |
 | `thresholds.head_pitch` | Pitch angle below which the driver is considered distracted (default: `-15`). |
-| `thresholds.perclos_fatigue_limit` | PERCLOS percentage above which fatigue is declared (default: `25%`). |
+| `thresholds.perclos_fatigue_limit` | PERCLOS percentage above which fatigue is declared (default: `20%`). |
 | `perclos_window_frames` | Number of frames in the PERCLOS sliding window (default: `15` ≈ 1.5 seconds at 10fps). |
 | `arduino_port` | Serial port for the Arduino buzzer (Linux: `/dev/ttyACM0`). |
 | `gps_port` | Serial port for the GPS module (Linux: `/dev/ttyAMA0`). |
