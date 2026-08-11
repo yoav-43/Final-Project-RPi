@@ -104,7 +104,7 @@ def receive_telemetry():
         cur.execute("UPDATE drives SET end_time = CURRENT_TIMESTAMP WHERE id = %s", (drive_id,))
 
         # Increment the alert counter whenever a fatigue or distraction event is detected.
-        if data.get('is_distracted') or data.get('perclos', 0) > 25:
+        if data.get('is_distracted') or data.get('perclos', 0) > 20:
             cur.execute("UPDATE drives SET total_alerts = total_alerts + 1 WHERE id = %s", (drive_id,))
         
         conn.commit()

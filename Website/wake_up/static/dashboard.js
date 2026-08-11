@@ -84,8 +84,8 @@ async function initDashboard() {
     makeChart('pitchChart',   'Head Pitch (°) — near 0 is better ✅ | below threshold = HEAD DOWN ⚠️',    data.map(d => d.pitch),   '#a8c97f', THRESHOLDS.pitch,   `< ${THRESHOLDS.pitch}° = Head Down`, 'Pitch (°)');
 
     data.forEach(d => {
-        if (d.distracted || d.perclos > 25) {
-            const type = d.perclos > 25 ? "Fatigue / Drowsiness" : "Distraction Alert";
+        if (d.distracted || d.perclos > 20) {
+            const type = d.perclos > 20 ? "Fatigue / Drowsiness" : "Distraction Alert";
             tableBody.innerHTML += `<tr class="alert-row"><td>${d.time}</td><td>${type}</td><td>CRITICAL</td></tr>`;
         }
     });

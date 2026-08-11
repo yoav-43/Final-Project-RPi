@@ -53,7 +53,7 @@ Two tables managed by `init_db.py`:
 
 ## Alert Threshold Note
 
-The Raspberry Pi triggers the fatigue buzzer when PERCLOS exceeds **20%** (set in `monitor/config.json`). The backend increments `total_alerts` and marks alert log rows when PERCLOS exceeds **25%**. This means the RPi will beep at a lower sensitivity than what the dashboard counts as an alert — by design, to distinguish a mild warning from a confirmed fatigue event.
+The Raspberry Pi triggers the fatigue buzzer when PERCLOS exceeds **20%** (set in `monitor/config.json`). The backend also increments `total_alerts` and marks alert log rows at the same **20%** threshold, keeping the RPi behavior and the dashboard fully in sync.
 
 ## API Endpoints
 
