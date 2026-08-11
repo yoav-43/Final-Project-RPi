@@ -13,7 +13,7 @@ Website/
 │   ├── requirements.txt      # Python dependencies
 │   ├── .python-version       # Python version pin
 │   ├── static/
-│   │   └── dashboard.js      # Chart.js rendering and alert table logic
+│   │   └── dashboard.js      # Chart.js + Leaflet rendering
 │   └── templates/
 │       ├── index.html        # Fleet overview page
 │       └── drive.html        # Per-session analytics page
@@ -48,15 +48,22 @@ Two tables managed by `init_db.py`:
 | `is_distracted` | BOOLEAN | True if head pose exceeded thresholds. |
 | `head_yaw` | FLOAT | Horizontal head rotation (degrees). |
 | `head_pitch` | FLOAT | Vertical head rotation (degrees). |
+| `latitude` | FLOAT | GPS latitude in decimal degrees (0.0 if no fix). |
+| `longitude` | FLOAT | GPS longitude in decimal degrees (0.0 if no fix). |
+
+## Alert Threshold Note
+
+The Raspberry Pi triggers the fatigue buzzer when PERCLOS exceeds **20%** (set in `monitor/config.json`). The backend increments `total_alerts` and marks alert log rows when PERCLOS exceeds **25%**. This means the RPi will beep at a lower sensitivity than what the dashboard counts as an alert — by design, to distinguish a mild warning from a confirmed fatigue event.
 
 ## API Endpoints
 
 | Method | Route | Description |
 |--------|-------|-------------|
-| `POST` | `/api/start_drive` | Creates a new `drives` row. Returns `{"drive_id": int}`. |
+| `POST` | `/api/start_drive` | Creates a new `drives` row. Returns `{"status": "success", "drive_id": int}`. |
 | `POST` | `/api/telemetry` | Inserts a `drive_logs` row and updates the heartbeat + alert counter. |
 | `POST` | `/api/end_drive` | Sets `end_time` and `video_url` on the `drives` row. |
 | `GET` | `/api/history/<drive_id>` | Returns all `drive_logs` rows for a session as JSON (used by Chart.js). |
+| `GET` | `/api/gps/<drive_id>` | Returns ordered GPS coordinates for a session, skipping `(0, 0)` points (used by Leaflet). |
 | `GET` | `/` | Renders the fleet overview dashboard (`index.html`). |
 | `GET` | `/drive/<drive_id>` | Renders the per-session analytics dashboard (`drive.html`). |
 
@@ -77,6 +84,8 @@ Two tables managed by `init_db.py`:
   - Eye Aspect Ratio
   - Head Yaw (horizontal)
   - Head Pitch (vertical)
+- Each chart includes a red dashed threshold line; segments that cross a threshold are interpolated for precision.
+- **Leaflet.js** interactive map showing the GPS route driven during the session, rendered from `/api/gps/<id>`. Start and end markers are placed automatically. If no GPS data is available, a message is shown.
 - Alert log table listing every timestamp where fatigue or distraction was detected.
 
 ## Deployment

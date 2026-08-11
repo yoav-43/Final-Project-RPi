@@ -82,6 +82,15 @@ class GPSManager:
 if __name__ == "__main__":
     gps = GPSManager()
     gps.start()
-    time.sleep(60)
-    print(f"Current Location: {gps.get_location()}")
-    gps.stop()
+    print("Polling GPS... (Ctrl+C to stop)")
+    try:
+        while True:
+            lat, lon = gps.get_location()
+            if lat == 0.0 and lon == 0.0:
+                print("NO FIX yet...")
+            else:
+                print(f"FIXED! Lat: {lat:.6f} | Lon: {lon:.6f}")
+            time.sleep(1)
+    except KeyboardInterrupt:
+        gps.stop()
+        print("Stopped.")

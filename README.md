@@ -2,7 +2,7 @@
 
 WakeUp is a real-time IoT safety system that detects driver fatigue and distraction using computer vision, issues immediate hardware alerts, and logs every session to a cloud dashboard for review.
 
-The system runs on a **Raspberry Pi** with a USB camera and an **Arduino-controlled buzzer**. At the end of each drive, the session video is uploaded to **Cloudinary** and all telemetry is stored in a **PostgreSQL** database accessible through a **Flask web dashboard** hosted on Heroku.
+The system runs on a **Raspberry Pi** with a **Waveshare RPi IR-CUT Camera** (OV5647, CSI interface) and an **Arduino-controlled buzzer**. At the end of each drive, the session video is uploaded to **Cloudinary** and all telemetry is stored in a **PostgreSQL** database accessible through a **Flask web dashboard** hosted on Heroku.
 
 ---
 
@@ -25,14 +25,13 @@ Camera → ImageProcessor → DriverMonitor → BuzzerController → Arduino →
 3. **EAR** (Eye Aspect Ratio) is computed each frame. If EAR < 0.18, the eye is counted as closed.
 4. **PERCLOS** (% of closed-eye frames in a **15-frame sliding window** ≈ 1.5 seconds) is tracked. Above 20% → fatigue.
 5. **Head pose** (yaw/pitch) is estimated via `cv2.solvePnP`. Yaw > ±45° or pitch < -15° → distraction.
-6. The Arduino buzzer is commanded every frame: fast beeping for fatigue, continuous tone for distraction, silence for OK.
+6. The Arduino buzzer is commanded every frame: fast beeping for fatigue, continuous tone for distraction, slow beeping when no face is detected, silence for OK.
 7. A **live stats overlay** (EAR, PERCLOS, Yaw, Pitch, FPS) is burned into every frame — green = OK, red = violation.
 8. Every second, a telemetry payload (EAR, PERCLOS, yaw, pitch, GPS) is sent to the Heroku backend in a background thread.
-9. On shutdown, the `.avi` recording is uploaded to Cloudinary and the session is finalized on the server.
+9. On shutdown, the `.mp4` recording is uploaded to Cloudinary and the session is finalized on the server.
 
 ---
 
-## Project Structure
 ## Project Structure
 
 ```
@@ -67,12 +66,16 @@ Final-Project-RPi/
 │   │   ├── init_db.py                # Database schema initializer
 │   │   ├── Procfile                  # Heroku process file
 │   │   ├── requirements.txt
-│   │   ├── static/dashboard.js       # Chart.js rendering
+│   │   ├── static/dashboard.js       # Chart.js + Leaflet rendering
 │   │   └── templates/
 │   │       ├── index.html            # Fleet overview dashboard
 │   │       └── drive.html            # Per-session analytics dashboard
 │   ├── mac_aliases.txt               # Shell aliases (macOS/Linux)
 │   └── win_aliases.txt               # PowerShell functions (Windows)
+│
+├── docs/
+│   ├── camera_reference.md           # Waveshare IR-CUT camera hardware reference
+│   └── RPI_CONFIG_SUMMARY.md         # Raspberry Pi OS/hardware configuration reference
 │
 ├── shape_predictor_68_face_landmarks.dat   # dlib AI model (not in repo — download separately)
 ├── .env                              # Secret keys (not committed)
@@ -89,7 +92,7 @@ Final-Project-RPi/
 | Component | Notes |
 |-----------|-------|
 | Raspberry Pi (3B+ or 4) | Any Linux-capable RPi works. |
-| USB webcam | Tested with V4L2-compatible cameras. |
+| Waveshare RPi IR-CUT Camera (OV5647) | Connected via CSI ribbon cable. Uses picamera2/libcamera backend. |
 | Arduino Uno (or compatible) | Connected via USB to the RPi. |
 | Passive buzzer | Wired to Arduino pin 6. |
 | GPS module (e.g., NEO-6M) | Connected to RPi UART (`/dev/ttyAMA0`). Optional — system runs without it. |
@@ -115,7 +118,7 @@ cd Final-Project-RPi
 ### 2. Install Python dependencies
 
 ```bash
-pip3 install opencv-python dlib imutils scipy python-dotenv pyserial requests cloudinary
+pip3 install opencv-python dlib imutils scipy python-dotenv pyserial requests cloudinary picamera2
 ```
 
 > **Note:** Building `dlib` from source on a Raspberry Pi can take 20–30 minutes. Consider using a pre-built wheel if available for your OS/Python version.
@@ -155,15 +158,17 @@ Edit the non-secret settings to match your hardware:
 ```json
 {
     "device_id": "raspi_v1",
-    "arduino_port": "/dev/ttyACM0",
-    "gps_port": "/dev/ttyAMA0",
+    "predictor_path": "shape_predictor_68_face_landmarks.dat",
+    "video_temp_file": "drive_video.mp4",
     "thresholds": {
         "ear": 0.18,
         "head_yaw": 45,
         "head_pitch": -15,
         "perclos_fatigue_limit": 20
     },
-    "perclos_window_frames": 15
+    "perclos_window_frames": 15,
+    "arduino_port": "/dev/ttyACM0",
+    "gps_port": "/dev/ttyAMA0"
 }
 ```
 
@@ -187,11 +192,20 @@ From the **project root**:
 python3 monitor/monitor.py
 ```
 
+Optional flags:
+
+| Flag | Description |
+|------|-------------|
+| `--live` / `-l` | Show live camera feed window |
+| `--night` / `-n` | Enable night-vision mode (GPIO17 LOW, IR-CUT filter open) |
+
 Or use the shell alias (after sourcing `Website/mac_aliases.txt`):
 
 ```bash
 source Website/mac_aliases.txt
-start_drive
+start_drive          # Day mode, no preview
+start_drive -l       # Day mode, with live window
+start_drive -n -l    # Night-vision mode, with live window
 ```
 
 The working directory must be the project root so that `config.json` and the `.dat` model are found at their expected relative paths. All output is printed to the terminal and saved to `latest.log` (overwritten each run).
@@ -203,7 +217,7 @@ The working directory must be the project root so that `config.json` and the `.d
 [INFO] [MainMonitor] 10:00:01 - Initializing Image Processor...
 [INFO] [GPS] 10:00:05 - GPS Background thread started.
 [INFO] [HerokuClient] 10:00:06 - Drive started. ID: 42
-[INFO] [MainMonitor] 10:00:06 - Recording video to: drive_video.avi
+[INFO] [MainMonitor] 10:00:06 - Recording video to: drive_video.mp4
 [INFO] [MainMonitor] 10:00:06 - System Live. Waiting for driver...
 [DEBUG] [MainMonitor] 10:00:07 - EAR:0.34 | PERCLOS:0.0% | Yaw:2.1 | Pitch:-5.2
 ```
@@ -220,6 +234,7 @@ Press **Ctrl+C** to stop. The system will automatically upload the video and fin
 | PERCLOS | > 20% | Fatigue alert (`b'F'` to buzzer) |
 | Head Yaw | > ±45° | Distraction alert (`b'D'` to buzzer) |
 | Head Pitch | < -15° | Distraction alert (`b'D'` to buzzer) |
+| No face | — | No-face alert (`b'N'` to buzzer) |
 
 All thresholds are adjustable in `monitor/config.json`.
 

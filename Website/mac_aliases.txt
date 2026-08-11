@@ -45,9 +45,26 @@ backup() {
 }
 
 # 4. START DRIVE ALIAS
-# Description: Runs the driver monitor and saves all output to latest.log.
-# Usage: Type 'start_drive' in terminal from the project root.
+# Description: Runs the driver monitor. Supports the following flags:
+#   --live,  -l   Show live camera feed window
+#   --night, -n   Enable night-vision mode (GPIO17 LOW, IR-CUT filter open)
+#
+# Usage examples:
+#   start_drive                   # Day mode, no preview
+#   start_drive -l                # Day mode, with live window
+#   start_drive -n                # Night-vision mode, no preview
+#   start_drive -n -l             # Night-vision mode, with live window
+#   start_drive --help            # Show all available flags
 start_drive() {
+    if [[ "$1" == "--help" || "$1" == "-h" ]]; then
+        echo -e "${CYAN}Usage: start_drive [OPTIONS]${NC}"
+        echo ""
+        echo "Options:"
+        echo "  --live,  -l   Show live camera feed window"
+        echo "  --night, -n   Enable night-vision mode (GPIO17 LOW, IR-CUT filter open)"
+        echo "  --help,  -h   Show this help message"
+        return 0
+    fi
     python3 monitor/monitor.py "$@"
 }
 

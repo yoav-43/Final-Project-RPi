@@ -25,7 +25,9 @@ HerokuClient(base_url, device_id)
 
 `POST /api/start_drive` with `{"device_id": ...}`.
 
-On success (HTTP 200/201), stores the returned `drive_id` in `self.current_drive_id`. This ID is required for all subsequent telemetry and end-drive calls. Returns `None` on failure.
+On success (HTTP 200/201), the server returns `{"status": "success", "drive_id": int}`. The client stores the `drive_id` in `self.current_drive_id` — this ID is required for all subsequent telemetry and end-drive calls. Returns `None` on failure.
+
+Retries up to 3 times with a 15-second timeout per attempt to handle cold Heroku dyno starts.
 
 #### `send_telemetry(ear, perclos, is_distracted, yaw, pitch, lat, lon)`
 
@@ -44,7 +46,7 @@ Fires a background `threading.Thread` to `POST /api/telemetry` with:
 }
 ```
 
-The thread is non-blocking — the main loop continues immediately. Failures are silently swallowed (`_post_telemetry` has a bare `except: pass`) to prevent log spam from transient network issues.
+The thread is non-blocking — the main loop continues immediately. Failures are silently swallowed (`_post_telemetry` catches all exceptions without logging) to prevent log spam from transient network issues.
 
 Called once per second from the main loop.
 
@@ -62,8 +64,8 @@ All methods wrap their HTTP calls in `try/except`. Failures are logged via `Syst
 
 | Method | Endpoint | Request Body | Response |
 |--------|----------|-------------|----------|
-| `POST` | `/api/start_drive` | `{"device_id": str}` | `{"drive_id": int}` |
-| `POST` | `/api/telemetry` | See above | `{"status": "success"}` |
+| `POST` | `/api/start_drive` | `{"device_id": str}` | `{"status": "success", "drive_id": int}` |
+| `POST` | `/api/telemetry` | See payload above | `{"status": "success"}` |
 | `POST` | `/api/end_drive` | `{"drive_id": int, "video_url": str}` | `{"status": "success"}` |
 
 ## Dependencies

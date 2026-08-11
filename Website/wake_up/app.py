@@ -189,8 +189,8 @@ def drive_dashboard(drive_id):
         "alerts": drive[4], "video": drive[5]
     }
     thresholds = {
-        "perclos_fatigue_limit": 25,
-        "ear": 0.15,
+        "perclos_fatigue_limit": 20,
+        "ear": 0.18,
         "head_yaw": 45,
         "head_pitch": -15
     }

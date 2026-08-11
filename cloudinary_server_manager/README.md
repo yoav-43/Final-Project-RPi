@@ -1,6 +1,6 @@
 # cloudinary_server_manager — Cloud Video Storage
 
-Uploads the local drive recording to Cloudinary at the end of each session. Cloudinary transcodes the `.avi` file to MP4 and serves it via CDN, making it embeddable in the web dashboard.
+Uploads the local drive recording to Cloudinary at the end of each session. Cloudinary transcodes the file to MP4 and serves it via CDN, making it embeddable in the web dashboard.
 
 ## Files
 
@@ -30,7 +30,8 @@ cloudinary.uploader.upload(file_path, resource_type="video", format="mp4")
 
 Key details:
 - `resource_type="video"` is required for video files (the default `"image"` type would fail).
-- `format="mp4"` instructs Cloudinary to transcode the `.avi` (MJPG codec) to H.264 MP4, which is universally playable in browsers.
+- `format="mp4"` instructs Cloudinary to ensure the output is H.264 MP4, which is universally playable in browsers.
+- The main monitor records video as `.mp4` (mp4v codec), so the upload is an `.mp4` file. The standalone test generates `.avi` (MJPG codec), which Cloudinary also accepts and transcodes.
 - Returns the `secure_url` (HTTPS CDN link) on success, or `None` on failure.
 - Checks that the file exists before attempting the upload.
 
@@ -55,7 +56,7 @@ Obtain these from your [Cloudinary Console](https://cloudinary.com/console) unde
 python3 cloudinary_server_manager/cloudinary_server_manager.py
 ```
 
-Loads credentials from `.env`, looks for `test_output.avi` in the current directory, and uploads it. Generate the test file first by running `image_processor/image_processor.py`.
+Loads credentials from `.env`, looks for `test_output.avi` in the current directory, and uploads it. Generate the test file first by running `python3 image_processor/image_processor.py`.
 
 ## Dependencies
 

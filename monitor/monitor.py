@@ -30,8 +30,9 @@ class DriverMonitor:
     video recording, and graceful shutdown sequence.
     """
 
-    def __init__(self, config_path='monitor/config.json', live=False):
+    def __init__(self, config_path='monitor/config.json', live=False, night_vision=False):
         self.live = live
+        self.night_vision = night_vision
         # Load secret credentials from the .env file in the project root.
         load_dotenv()
 
@@ -71,14 +72,15 @@ class DriverMonitor:
         self.logger.log("INFO", "Initializing Image Processor...")
         self.img_proc = ImageProcessor(
             predictor_path=self.config['predictor_path'],
-            camera_index=0
+            camera_index=0,
+            night_vision=self.night_vision
         )
         
         # State variables for the detection loop.
         self.video_out = None
         self.video_path = None
         # Sliding window for PERCLOS: stores 1 (closed) or 0 (open) per frame.
-        # 30 frames ≈ 3 seconds at 10 fps — adjust via config if needed.
+        # Default: 15 frames ≈ 1.5 seconds at 10 fps — adjust via config if needed.
         perclos_window = self.config.get('perclos_window_frames', 30)
         self.eye_state_window = deque(maxlen=perclos_window)
         self.last_buzzer_state = None  # Track last sent command to avoid re-triggering mid-beep
@@ -107,11 +109,11 @@ class DriverMonitor:
 
         # Use MJPG codec with .avi container for crash-safe incremental writes.
         # Frames are flushed to disk immediately, preventing data loss on abrupt exit.
-        fourcc = cv2.VideoWriter_fourcc(*'MJPG')
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
         
-        # Force the .avi extension regardless of the configured file name.
+        # Force the .mp4 extension for browser-compatible color playback.
         base_name = os.path.splitext(self.config['video_temp_file'])[0]
-        self.video_path = f"{base_name}.avi"
+        self.video_path = f"{base_name}.mp4"
         
         self.logger.log("INFO", f"Recording video to: {self.video_path}")
         self.video_out = cv2.VideoWriter(self.video_path, fourcc, 10.0, (640, 480))
@@ -134,6 +136,7 @@ class DriverMonitor:
                 # Resize to a fixed resolution required by the VideoWriter.
                 frame = cv2.resize(frame, (640, 480))
                 gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                gray = self.img_proc.clahe.apply(gray)
 
                 # FPS — measured every frame regardless of detection.
                 self._fps_frame_count += 1
@@ -244,7 +247,7 @@ class DriverMonitor:
             self.cleanup()
 
     def cleanup(self):
-        """Releases all hardware resources, uploads the session video, and finalizes the drive record."""
+        """Releases all hardware resources, uploads the .mp4 session video to Cloudinary, and finalizes the drive record."""
         self.logger.log("INFO", "Starting cleanup...")
         self.running = False
         
@@ -275,7 +278,8 @@ if __name__ == "__main__":
         print("Error: monitor/config.json not found.")
     else:
         parser = argparse.ArgumentParser()
-        parser.add_argument('--live', action='store_true', help='Show live camera feed window')
+        parser.add_argument('--live', '-l', action='store_true', help='Show live camera feed window')
+        parser.add_argument('--night', '-n', action='store_true', help='Enable night-vision mode (GPIO17 LOW, IR-CUT filter open)')
         args = parser.parse_args()
-        app = DriverMonitor(live=args.live)
+        app = DriverMonitor(live=args.live, night_vision=args.night)
         app.run()

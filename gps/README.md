@@ -48,7 +48,7 @@ Example: `3157.3841` → `31 + (57.3841 / 60)` = `31.9564°`
 
 ## Telemetry Integration
 
-The main loop calls `gps.get_location()` once per second and includes `latitude` and `longitude` in the telemetry payload sent to the backend. If GPS is unavailable, both values are `0.0`.
+The main loop calls `gps.get_location()` once per second and includes `latitude` and `longitude` in the telemetry payload sent to the backend. If GPS is unavailable, both values are `0.0`. The backend stores coordinates in the `drive_logs` table and uses them to render a Leaflet.js route map on the session analytics dashboard.
 
 ## Standalone Test
 
@@ -56,7 +56,7 @@ The main loop calls `gps.get_location()` once per second and includes `latitude`
 python3 gps/gps_manager.py
 ```
 
-Starts the GPS thread, waits 60 seconds, prints the last known location, then stops.
+Starts the GPS thread and polls `get_location()` every second, printing the current fix status to the terminal. Press **Ctrl+C** to stop. GPS modules may take up to 60 seconds outdoors to acquire a fix.
 
 ## Dependencies
 

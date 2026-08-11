@@ -51,14 +51,14 @@ If the Arduino is not connected, the constructor logs an error and sets `self.ar
 | `alert_distraction()` | `b'D'` | Triggers continuous medium-priority alarm. |
 | `alert_no_face()` | `b'N'` | Triggers slow beeping alert when no face is detected. |
 | `status_ok()` | `b'O'` | Silences the buzzer. |
-| `close()` | — | Closes the serial port cleanly. |
+| `close()` | — | Sends `b'O'` then closes the serial port cleanly. |
 
 ## Arduino Firmware Notes
 
 - `tone(pin, freq)` — starts a continuous tone (non-blocking).
 - `tone(pin, freq, duration)` — plays a tone for a fixed duration.
 - `noTone(pin)` — stops any active tone.
-- The `loop()` function is purely reactive: it only acts when a byte is available on `Serial`.
+- The `loop()` function runs continuously and is **timer-driven**: beeping patterns (fast/slow) are managed using `millis()` timestamps, so tones toggle on/off at the correct intervals even between incoming serial bytes. New bytes from the Raspberry Pi are drained from the serial buffer at the start of each loop iteration to always act on the most recent command.
 
 ## Standalone Test
 

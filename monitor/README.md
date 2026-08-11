@@ -23,18 +23,18 @@ This is the top-level orchestrator of the WakeUp system. Run `monitor.py` to sta
 
 - Opens the camera via `ImageProcessor`.
 - Calls `HerokuClient.start_drive()` to register the session on the server (retries up to 3 times with a 15s timeout to handle cold Heroku dyno starts).
-- Creates a `cv2.VideoWriter` using the **MJPG + .avi** codec (crash-safe: frames are flushed to disk immediately).
+- Creates a `cv2.VideoWriter` using the **mp4v + .mp4** codec for browser-compatible color playback.
 - On every frame:
   - Computes **FPS** (updated every second, independent of face detection).
   - Detects faces with dlib's frontal HOG detector.
-  - If no face: silences buzzer, draws stats overlay, continues.
+  - If no face: sends `b'N'` slow-beep alert to the buzzer, draws stats overlay, continues to next frame.
   - Calculates **EAR** (Eye Aspect Ratio) for drowsiness.
-  - Calculates **PERCLOS** using a **sliding window** of the last `perclos_window_frames` frames (~1.5 seconds at 10fps) for fatigue detection.
+  - Calculates **PERCLOS** using a **sliding window** of the last `perclos_window_frames` frames (default: 15 ≈ 1.5 seconds at 10fps) for fatigue detection.
   - Estimates **head yaw/pitch** via `solvePnP` for distraction.
-  - Sends the appropriate command to the buzzer (`F` / `D` / `O`).
+  - Sends the appropriate command to the buzzer (`F` fatigue / `D` distraction / `O` all-clear).
   - Draws a live stats overlay (EAR, PERCLOS, Yaw, Pitch, FPS) on the frame — green = OK, red = violation.
   - Writes the annotated frame to the video file.
-  - Shows a live window if `DISPLAY` is set (headless-safe).
+  - Shows a live window if the `--live` flag was passed on startup.
 - Every 1 second: sends a telemetry payload (EAR, PERCLOS, yaw, pitch, GPS) to the backend in a background thread.
 - On `KeyboardInterrupt` or loop exit: calls `cleanup()`.
 
@@ -43,7 +43,7 @@ This is the top-level orchestrator of the WakeUp system. Run `monitor.py` to sta
 - Releases the camera and video writer.
 - Closes the display window (if open).
 - Stops GPS and closes the serial port.
-- Uploads the `.avi` file to Cloudinary.
+- Uploads the `.mp4` recording to Cloudinary.
 - Calls `HerokuClient.end_drive()` with the resulting video URL.
 
 ## config.json Reference
@@ -69,7 +69,7 @@ This is the top-level orchestrator of the WakeUp system. Run `monitor.py` to sta
 |-----|-------------|
 | `device_id` | Identifier sent to the backend to tag this device's sessions. |
 | `predictor_path` | Path to the dlib 68-landmark `.dat` model file (relative to project root). |
-| `video_temp_file` | Base name for the local video file. Extension is forced to `.avi` at runtime. |
+| `video_temp_file` | Base name for the local video file. Extension is forced to `.mp4` at runtime. |
 | `thresholds.ear` | EAR value below which an eye is considered closed (default: `0.18`). |
 | `thresholds.head_yaw` | Absolute yaw angle (degrees) above which the driver is considered distracted (default: `45`). |
 | `thresholds.head_pitch` | Pitch angle below which the driver is considered distracted (default: `-15`). |
@@ -86,6 +86,13 @@ From the **project root**:
 python3 monitor/monitor.py
 ```
 
+Optional flags:
+
+| Flag | Description |
+|------|-------------|
+| `--live` / `-l` | Show live camera feed window |
+| `--night` / `-n` | Enable night-vision mode (GPIO17 LOW, IR-CUT filter open) |
+
 Or use the shell alias (after sourcing `Website/mac_aliases.txt`):
 
 ```bash
@@ -94,7 +101,7 @@ start_drive
 
 The working directory must be the project root so that `config.json` and `shape_predictor_68_face_landmarks.dat` are found at their expected relative paths.
 
-All output is logged to the terminal and saved to `latest.log` in the project root. Each run overwrites the previous log.
+All output is logged to the terminal and saved to `latest.log` in the project root. Each run creates a new timestamped log file in `logs/` and updates the `latest.log` symlink.
 
 ## Dependencies
 
